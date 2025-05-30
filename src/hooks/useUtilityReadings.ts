@@ -9,7 +9,7 @@ export const useUtilityReadings = () => {
   const { scopeQuery, isAuthenticated, currentAccountId } = useAccountScoping();
   
   return useQuery({
-    queryKey: ["utility_readings", currentAccountId],
+    queryKey: ["unit_utilities", currentAccountId],
     queryFn: async () => {
       if (!isAuthenticated) {
         console.log("No authenticated account found");
@@ -18,20 +18,50 @@ export const useUtilityReadings = () => {
       
       console.log("Fetching utility readings for account ID:", currentAccountId);
       
-      const baseQuery = supabase
-        .from("utility_readings")
-        .select(`
-          *,
-          property:properties(name, account_id),
-          unit:units(unit_number)
-        `);
-      
-      const query = scopeQuery(baseQuery);
-      if (!query) return [];
-      
-      const { data, error } = await query;
-      
-      if (error) {
+      try {
+        // Get all unit utilities and join with properties table
+        // Don't use account_id in the query directly since it doesn't exist in unit_utilities
+        const { data, error } = await supabase
+          .from("unit_utilities")
+          .select(`
+            *,
+            property:properties(name, account_id),
+            unit:units(unit_number)
+          `);
+          
+        if (error) {
+          console.error("Error fetching utility readings:", error);
+          throw error;
+        }
+        
+        if (error) {
+          console.error("Error fetching utility readings:", error);
+          throw error;
+        }
+        
+        // Extra security: Filter out any readings that don't belong to the current account
+        const formattedData = data
+          .filter(reading => reading.property?.account_id === currentAccountId)
+          .map(reading => ({
+            id: reading.id,
+            property: reading.property?.name || 'Unknown Property',
+            unit: reading.unit?.unit_number || 'Unknown Unit',
+            utility_type: reading.utility_type,
+            current_reading: reading.current_reading,
+            previous_reading: reading.previous_reading,
+            reading_date: reading.reading_date,
+            month: new Date(reading.reading_date).toLocaleString('default', { month: 'long' }),
+            year: new Date(reading.reading_date).getFullYear(),
+            rate: reading.rate,
+            amount: reading.amount,
+            property_id: reading.property_id,
+            unit_id: reading.unit_id,
+            account_id: reading.account_id
+          }));
+        
+        console.log("Utility readings fetched successfully:", formattedData);
+        return formattedData;
+      } catch (error) {
         console.error("Error fetching utility readings:", error);
         throw error;
       }

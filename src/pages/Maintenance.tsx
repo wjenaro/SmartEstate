@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Search, Filter, Wrench, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import { MaintenanceForm } from "@/components/forms/MaintenanceForm";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -25,72 +25,10 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-
-// Mock data for maintenance issues
-const maintenanceData = [
-  {
-    id: 1,
-    property: "Riverside Apartments",
-    unit: "A101",
-    issue: "Leaking kitchen sink",
-    status: "open",
-    date: "2025-05-20",
-    expenseAmount: null,
-  },
-  {
-    id: 2,
-    property: "Parklands Residences",
-    unit: "B205",
-    issue: "Faulty electrical outlet in bedroom",
-    status: "in_progress",
-    date: "2025-05-15",
-    expenseAmount: 2500,
-  },
-  {
-    id: 3,
-    property: "Riverside Apartments",
-    unit: "Common Area",
-    issue: "Broken gate at entrance",
-    status: "closing",
-    date: "2025-05-10",
-    expenseAmount: 15000,
-  },
-  {
-    id: 4,
-    property: "Westlands Heights",
-    unit: "C304",
-    issue: "Bathroom tiles cracked",
-    status: "open",
-    date: "2025-05-25",
-    expenseAmount: null,
-  },
-  {
-    id: 5,
-    property: "Kilimani Plaza",
-    unit: "D102",
-    issue: "Water heater not working",
-    status: "in_progress",
-    date: "2025-05-18",
-    expenseAmount: 8000,
-  },
-];
-
-// Properties mock data
-const propertiesData = [
-  { id: "1", name: "Riverside Apartments" },
-  { id: "2", name: "Parklands Residences" },
-  { id: "3", name: "Westlands Heights" },
-  { id: "4", name: "Kilimani Plaza" },
-];
-
-// Units mock data
-const unitsData = [
-  { id: "101", unit_number: "A101", property_id: "1" },
-  { id: "102", unit_number: "A102", property_id: "1" },
-  { id: "103", unit_number: "B205", property_id: "2" },
-  { id: "104", unit_number: "C304", property_id: "3" },
-  { id: "105", unit_number: "D102", property_id: "4" },
-];
+import { useMaintenance, useAddMaintenance, useUpdateMaintenance } from "@/hooks/useMaintenance";
+import { useProperties } from "@/hooks/useProperties";
+import { useUnits } from "@/hooks/useUnits";
+import { format } from "date-fns";
 
 const Maintenance = () => {
   const isMobile = useIsMobile();
@@ -100,26 +38,44 @@ const Maintenance = () => {
   const [statusFilter, setStatusFilter] = useState("all-statuses");
   const [propertyFilter, setPropertyFilter] = useState("all-properties");
   const [isAddMaintenanceOpen, setIsAddMaintenanceOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   
-  // Simulate data fetching
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+  // Fetch real-time data from Supabase
+  const { data: maintenanceData, isLoading: isMaintenanceLoading } = useMaintenance();
+  const { data: propertiesData, isLoading: isPropertiesLoading } = useProperties();
+  const { data: unitsData, isLoading: isUnitsLoading } = useUnits();
+  const addMaintenance = useAddMaintenance();
+  const updateMaintenance = useUpdateMaintenance();
+  
+  // Combined loading state
+  const isLoading = isMaintenanceLoading || isPropertiesLoading || isUnitsLoading;
+  
+  // Format maintenance data for display
+  const formattedMaintenanceData = useMemo(() => {
+    if (!maintenanceData || !Array.isArray(maintenanceData)) return [];
     
-    return () => clearTimeout(timer);
-  }, []);
+    return maintenanceData.map(item => ({
+      id: item.id,
+      property: item.property?.name || 'Unknown Property',
+      property_id: item.property_id,
+      unit: item.unit?.unit_number || 'N/A',
+      unit_id: item.unit_id,
+      issue: item.issue,
+      status: item.status,
+      date: item.created_at ? format(new Date(item.created_at), 'yyyy-MM-dd') : '',
+      expenseAmount: item.expense_amount,
+      notes: item.notes
+    }));
+  }, [maintenanceData]);
   
   // Filter maintenance data based on filters
-  const filteredMaintenance = maintenanceData.filter((item) => {
+  const filteredMaintenance = formattedMaintenanceData.filter((item) => {
     const matchesSearch = 
       item.issue.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.unit.toLowerCase().includes(searchQuery.toLowerCase());
       
     const matchesStatus = statusFilter === "all-statuses" || item.status === statusFilter;
-    const matchesProperty = propertyFilter === "all-properties" || item.property === propertiesData.find(p => p.id === propertyFilter)?.name;
+    const matchesProperty = propertyFilter === "all-properties" || item.property_id === propertyFilter;
     
     return matchesSearch && matchesStatus && matchesProperty;
   });
@@ -360,17 +316,28 @@ const Maintenance = () => {
 
       <Dialog open={isAddMaintenanceOpen} onOpenChange={setIsAddMaintenanceOpen}>
         <DialogContent className="max-w-3xl">
+          <DialogTitle>Record Maintenance</DialogTitle>
+          <DialogDescription>
+            Fill in the details below to record a new maintenance issue for your property.
+          </DialogDescription>
           <MaintenanceForm 
             properties={propertiesData}
             units={unitsData}
             onClose={() => setIsAddMaintenanceOpen(false)}
-            onSuccess={() => {
-              setIsAddMaintenanceOpen(false);
-              toast({
-                title: "Maintenance issue recorded",
-                description: "The maintenance issue has been successfully recorded.",
-              });
-              // In a real app, this would refetch the data
+            onSubmit={async (values) => {
+              try {
+                await addMaintenance.mutateAsync({
+                  property_id: values.property_id,
+                  unit_id: values.unit_id,
+                  issue: values.issue,
+                  notes: values.notes,
+                  status: values.status || 'open',
+                  expense_amount: values.expense_amount ? parseFloat(values.expense_amount.toString()) : undefined
+                });
+                setIsAddMaintenanceOpen(false);
+              } catch (error) {
+                console.error('Error adding maintenance:', error);
+              }
             }}
           />
         </DialogContent>

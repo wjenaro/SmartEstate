@@ -23,6 +23,7 @@ interface MaintenanceFormProps {
   onClose?: () => void;
   propertyId?: string;
   onPropertyChange?: (propertyId: string) => void;
+  onSubmit?: (values: any) => Promise<void>;
   onSuccess?: () => void;
 }
 
@@ -32,6 +33,7 @@ export function MaintenanceForm({
   onClose, 
   propertyId,
   onPropertyChange,
+  onSubmit,
   onSuccess
 }: MaintenanceFormProps) {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -51,15 +53,47 @@ export function MaintenanceForm({
   
   // Remove an image
   const removeImage = (index: number) => {
-    const newImages = [...selectedImages];
-    newImages.splice(index, 1);
-    setSelectedImages(newImages);
+    setSelectedImages(prev => {
+      const newFiles = [...prev];
+      newFiles.splice(index, 1);
+      return newFiles;
+    });
     
-    // Revoke the URL to prevent memory leaks
-    URL.revokeObjectURL(imagePreviewUrls[index]);
-    const newPreviewUrls = [...imagePreviewUrls];
-    newPreviewUrls.splice(index, 1);
-    setImagePreviewUrls(newPreviewUrls);
+    setImagePreviewUrls(prev => {
+      const newUrls = [...prev];
+      URL.revokeObjectURL(newUrls[index]); // Clean up the URL object
+      newUrls.splice(index, 1);
+      return newUrls;
+    });
+  };
+  
+  // Handle form submission
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    // Get form data
+    const formElement = event.target as HTMLFormElement;
+    const formData = new FormData(formElement);
+    
+    const values = {
+      property_id: formData.get('property_id') as string,
+      unit_id: formData.get('unit_id') as string || undefined,
+      issue: formData.get('issue') as string,
+      notes: formData.get('notes') as string || undefined,
+      status: formData.get('status') as string || 'open',
+      expense_amount: formData.get('expense_amount') ? parseFloat(formData.get('expense_amount') as string) : undefined
+    };
+    
+    // Call the appropriate callback
+    if (onSubmit) {
+      try {
+        await onSubmit(values);
+      } catch (error) {
+        console.error('Error submitting form:', error);
+      }
+    } else if (onSuccess) {
+      onSuccess();
+    }
   };
 
   return (
@@ -71,15 +105,19 @@ export function MaintenanceForm({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="property">Property*</Label>
+              <Label htmlFor="property_id">Property*</Label>
               <Select 
-                value={propertyId} 
-                onValueChange={(value) => onPropertyChange && onPropertyChange(value)}
+                required 
+                name="property_id"
+                defaultValue={propertyId} 
+                onValueChange={(value) => {
+                  if (onPropertyChange) onPropertyChange(value);
+                }}
               >
-                <SelectTrigger id="property">
+                <SelectTrigger id="property_id">
                   <SelectValue placeholder="Select property" />
                 </SelectTrigger>
                 <SelectContent>
@@ -92,9 +130,9 @@ export function MaintenanceForm({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="unit">Unit (Optional)</Label>
-              <Select>
-                <SelectTrigger id="unit">
+              <Label htmlFor="unit_id">Unit</Label>
+              <Select name="unit_id">
+                <SelectTrigger id="unit_id">
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
                 <SelectContent>
@@ -110,23 +148,10 @@ export function MaintenanceForm({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="status">Status*</Label>
-            <Select defaultValue="open">
-              <SelectTrigger id="status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="closing">Closing</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
             <Label htmlFor="issue">Maintenance Issue*</Label>
             <Textarea 
               id="issue" 
+              name="issue"
               placeholder="Describe the maintenance issue" 
               className="min-h-24"
               required
@@ -142,7 +167,8 @@ export function MaintenanceForm({
                 </span>
               </Label>
               <Input 
-                id="expenseAmount" 
+                id="expense_amount" 
+                name="expense_amount"
                 type="number" 
                 min="0" 
                 step="0.01" 
@@ -160,10 +186,26 @@ export function MaintenanceForm({
           </div>
           
           <div className="space-y-2">
+            <Label htmlFor="status">Status*</Label>
+            <Select defaultValue="open" name="status">
+              <SelectTrigger id="status">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="closing">Closing</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
             <Label htmlFor="notes">Additional Notes</Label>
             <Textarea 
               id="notes" 
-              placeholder="Enter any additional notes or information" 
+              name="notes"
+              placeholder="Add any additional information here" 
+              className="min-h-20"
             />
           </div>
           
@@ -223,14 +265,7 @@ export function MaintenanceForm({
               Cancel
             </Button>
             <Button 
-              type="button" 
-              onClick={() => {
-                // In a real app, this would submit the form with actual data
-                // For now, we'll just simulate a successful submission
-                if (onSuccess) {
-                  onSuccess();
-                }
-              }}
+              type="submit"
             >
               Record Maintenance
             </Button>

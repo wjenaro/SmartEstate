@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Search, Filter, Droplet, Zap, LineChart, ArrowUp, ArrowDown } from "lucide-react";
 import { UtilityReadingForm } from "@/components/forms/UtilityReadingForm";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -28,6 +28,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUtilityReadings, usePropertiesWithRates, useUnitsForUtilities } from "@/hooks/useUtilityReadings";
 import { useAccountScoping } from "@/hooks/useAccountScoping";
 import { AccountBadge } from "@/components/ui/account-badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 // The utility readings, properties, and units data is now fetched with account isolation via custom hooks
 
@@ -35,6 +37,7 @@ const Utilities = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { isAuthenticated } = useAccountScoping();
+  const queryClient = useQueryClient();
   const { data: utilityReadings, isLoading: isReadingsLoading } = useUtilityReadings();
   const { data: properties, isLoading: isPropertiesLoading } = usePropertiesWithRates();
   const { data: units, isLoading: isUnitsLoading } = useUnitsForUtilities();
@@ -50,18 +53,28 @@ const Utilities = () => {
   const isLoading = isReadingsLoading || isPropertiesLoading || isUnitsLoading;
   
   // Filter utility readings data based on filters and active tab
-  const filteredReadings = utilityReadings ? utilityReadings.filter((item) => {
-    const matchesSearch = 
-      item.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.unit.toLowerCase().includes(searchQuery.toLowerCase());
-      
-    const matchesUtilityType = utilityTypeFilter === "all" || item.utility_type === utilityTypeFilter;
-    const matchesProperty = propertyFilter === "all-properties" || item.property_id === propertyFilter;
-    const matchesMonth = monthFilter === "all-months" || `${item.month}-${item.year}` === monthFilter;
-    const matchesTab = activeTab === "all" ? true : item.utility_type === activeTab;
+  const filteredReadings = React.useMemo(() => {
+    if (!utilityReadings || !Array.isArray(utilityReadings)) return [];
     
-    return matchesSearch && matchesUtilityType && matchesProperty && matchesMonth && matchesTab;
-  }) : [];
+    return utilityReadings.filter((item) => {
+      // Skip invalid items
+      if (!item || typeof item !== 'object') return false;
+      
+      const property = item.property || '';
+      const unit = item.unit || '';
+      
+      const matchesSearch = 
+        property.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+        unit.toString().toLowerCase().includes(searchQuery.toLowerCase());
+        
+      const matchesUtilityType = utilityTypeFilter === "all" || item.utility_type === utilityTypeFilter;
+      const matchesProperty = propertyFilter === "all-properties" || item.property_id === propertyFilter;
+      const matchesMonth = monthFilter === "all-months" || `${item.month}-${item.year}` === monthFilter;
+      const matchesTab = activeTab === "all" ? true : item.utility_type === activeTab;
+      
+      return matchesSearch && matchesUtilityType && matchesProperty && matchesMonth && matchesTab;
+    });
+  }, [utilityReadings, searchQuery, utilityTypeFilter, propertyFilter, monthFilter, activeTab]);
   
   // Get utility type icon
   const getUtilityIcon = (type: string) => {
@@ -76,8 +89,11 @@ const Utilities = () => {
   };
   
   // Get consumption with trend indicator
-  const getConsumptionWithTrend = (current: number, previous: number) => {
-    const consumption = current - previous;
+  const getConsumptionWithTrend = (current: number | null | undefined, previous: number | null | undefined) => {
+    const currentValue = typeof current === 'number' ? current : 0;
+    const previousValue = typeof previous === 'number' ? previous : 0;
+    
+    const consumption = currentValue - previousValue;
     const isIncrease = consumption > 0;
     
     return (
@@ -85,7 +101,7 @@ const Utilities = () => {
         <span>{consumption.toFixed(2)}</span>
         {isIncrease ? (
           <ArrowUp className="h-3 w-3 text-red-500" />
-        ) : (
+        ) : consumption === 0 ? null : (
           <ArrowDown className="h-3 w-3 text-green-500" />
         )}
       </div>
@@ -133,7 +149,7 @@ const Utilities = () => {
         <div className="flex justify-between items-center">
           <div>
             <p className="text-sm text-muted-foreground">Amount</p>
-            <p className="text-lg font-bold">KES {item.amount.toLocaleString()}</p>
+            <p className="text-lg font-bold">KES {(item.amount || 0).toLocaleString()}</p>
           </div>
           <div className="text-sm text-muted-foreground">
             {item.month} {item.year}
@@ -178,10 +194,12 @@ const Utilities = () => {
             <div className="flex items-center">
               <Droplet className="h-5 w-5 text-blue-500 mr-2" />
               <span className="text-2xl font-bold">
-                {utilityReadings
-                  .filter(item => item.utility_type === "water")
-                  .reduce((sum, item) => sum + (item.current_reading - item.previous_reading), 0)
-                  .toFixed(2)}
+                {utilityReadings && Array.isArray(utilityReadings) 
+                  ? utilityReadings
+                    .filter(item => item.utility_type === "water")
+                    .reduce((sum, item) => sum + (item.current_reading - item.previous_reading), 0)
+                    .toFixed(2)
+                  : "0.00"}
               </span>
               <span className="text-muted-foreground ml-2">units</span>
             </div>
@@ -196,10 +214,12 @@ const Utilities = () => {
             <div className="flex items-center">
               <Zap className="h-5 w-5 text-yellow-500 mr-2" />
               <span className="text-2xl font-bold">
-                {utilityReadings
-                  .filter(item => item.utility_type === "electricity")
-                  .reduce((sum, item) => sum + (item.current_reading - item.previous_reading), 0)
-                  .toFixed(2)}
+                {utilityReadings && Array.isArray(utilityReadings) 
+                  ? utilityReadings
+                    .filter(item => item.utility_type === "electricity")
+                    .reduce((sum, item) => sum + (item.current_reading - item.previous_reading), 0)
+                    .toFixed(2)
+                  : "0.00"}
               </span>
               <span className="text-muted-foreground ml-2">kWh</span>
             </div>
@@ -214,9 +234,11 @@ const Utilities = () => {
             <div className="flex items-center">
               <LineChart className="h-5 w-5 text-primary mr-2" />
               <span className="text-2xl font-bold">
-                KES {utilityReadings
-                  .reduce((sum, item) => sum + item.amount, 0)
-                  .toLocaleString()}
+                KES {utilityReadings && Array.isArray(utilityReadings) 
+                  ? utilityReadings
+                    .reduce((sum, item) => sum + (item.amount || 0), 0)
+                    .toLocaleString()
+                  : "0"}
               </span>
             </div>
           </CardContent>
@@ -407,18 +429,40 @@ const Utilities = () => {
       )}
 
       <Dialog open={isAddReadingOpen} onOpenChange={setIsAddReadingOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl overflow-y-auto max-h-[90vh]">
+          <DialogTitle>Record Utility Reading</DialogTitle>
+          <DialogDescription>
+            Enter the details for water and/or electricity utility readings.
+          </DialogDescription>
           <UtilityReadingForm 
             properties={properties || []}
             units={units || []}
             onClose={() => setIsAddReadingOpen(false)}
-            onSuccess={() => {
-              setIsAddReadingOpen(false);
-              toast({
-                title: "Utility reading recorded",
-                description: "The utility reading has been successfully recorded.",
-              });
-              // This would trigger a refetch in a complete implementation
+            onSubmit={async (values) => {
+              try {
+                // Call the API endpoint to save the utility reading
+                const { error } = await supabase
+                  .from('unit_utilities')
+                  .insert(values);
+                  
+                if (error) throw error;
+                
+                setIsAddReadingOpen(false);
+                toast({
+                  title: "Utility reading recorded",
+                  description: "The utility reading has been successfully recorded.",
+                });
+                
+                // Refresh data
+                await queryClient.invalidateQueries({ queryKey: ['utility_readings'] });
+              } catch (error) {
+                console.error('Error recording utility reading:', error);
+                toast({
+                  title: "Error recording reading",
+                  description: "There was a problem saving the utility reading.",
+                  variant: "destructive"
+                });
+              }
             }}
           />
         </DialogContent>

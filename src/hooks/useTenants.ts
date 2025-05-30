@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAccountScoping } from './useAccountScoping';
+import { useAuth } from './useAuth';
 import { useToast } from '@/components/ui/use-toast';
 
 export type Tenant = {
@@ -104,8 +105,9 @@ export function useTenants() {
 
 export function useAddTenant() {
   const queryClient = useQueryClient();
-  const { createWithAccountId } = useAccountScoping();
+  const { createWithAccountId, getCurrentAccountId } = useAccountScoping();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (tenant: Omit<Tenant, 'id'>) => {
@@ -140,7 +142,28 @@ export function useAddTenant() {
       };
       
       try {
-        return await createWithAccountId('tenants', newTenant, supabase);
+        // Format data to match schema requirements
+        const tenant = {
+          ...newTenant,
+          account_id: await getCurrentAccountId(),
+          user_id: null, // Set to null to avoid foreign key constraint errors
+          // Let the database handle created_at and updated_at with defaults
+        };
+        
+        // Insert tenant data using the actual schema fields
+        const { data: accountData, error: accountError } = await supabase
+          .from('tenants')
+          .insert(tenant)
+          .select('*');
+          
+        if (accountData && accountData.length > 0) {
+          return accountData[0];
+        }
+        
+        if (accountError) {
+          console.error('Error adding tenant:', accountError);
+          throw accountError;
+        }
       } catch (error: any) {
         console.error('Error adding tenant:', error);
         

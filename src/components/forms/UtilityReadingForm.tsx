@@ -67,6 +67,8 @@ export function UtilityReadingForm({
       const property = properties.find(p => p.id === propertyId);
       if (property) {
         setSelectedProperty(property);
+        // Reset selected unit when property changes
+        setSelectedUnit("");
       }
     }
   }, [propertyId, properties]);
@@ -339,10 +341,13 @@ export function UtilityReadingForm({
       // Insert readings into the database
       if (readings.length > 0) {
         const { error } = await supabase
-          .from('utility_readings')
+          .from('unit_utilities')
           .insert(readings);
           
-        if (error) throw error;
+        if (error) {
+          console.error('Error saving utility readings:', error);
+          throw error;
+        }
         
         toast({
           title: "Utility readings saved",
@@ -350,10 +355,8 @@ export function UtilityReadingForm({
           variant: "default"
         });
         
-        // Call the success callback if provided
-        if (onSuccess) {
-          onSuccess();
-        }
+        if (onSuccess) onSuccess();
+        resetForm();
       }
     } catch (error) {
       console.error('Error saving utility readings:', error);
@@ -387,14 +390,20 @@ export function UtilityReadingForm({
       <CardContent>
         <form className="space-y-6">
           {/* Property and Unit Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="space-y-2">
-              <Label htmlFor="propertySelect">Property*</Label>
+              <Label htmlFor="property">Property*</Label>
               <Select 
-                value={propertyId} 
-                onValueChange={handlePropertySelect}
+                value={selectedProperty?.id || ""} 
+                onValueChange={(value) => {
+                  const property = properties.find(p => p.id === value);
+                  setSelectedProperty(property || null);
+                  // Reset selected unit when property changes
+                  setSelectedUnit("");
+                  if (onPropertyChange) onPropertyChange(value);
+                }}
               >
-                <SelectTrigger id="propertySelect">
+                <SelectTrigger id="property">
                   <SelectValue placeholder="Select property" />
                 </SelectTrigger>
                 <SelectContent>
@@ -407,22 +416,25 @@ export function UtilityReadingForm({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="unitSelect">Unit*</Label>
-              <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-                <SelectTrigger id="unitSelect" className={validationErrors.unit ? "border-destructive" : ""}>
-                  <SelectValue placeholder="Select unit" />
+              <Label htmlFor="unit">Unit*</Label>
+              <Select 
+                value={selectedUnit} 
+                onValueChange={setSelectedUnit}
+                disabled={!selectedProperty}
+              >
+                <SelectTrigger id="unit">
+                  <SelectValue placeholder={selectedProperty ? "Select unit" : "Select property first"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {units.map((unit) => (
-                    <SelectItem key={unit.id} value={unit.id}>
-                      {unit.unit_number}
-                    </SelectItem>
-                  ))}
+                  {units
+                    .filter(unit => selectedProperty && unit.property_id === selectedProperty.id)
+                    .map((unit) => (
+                      <SelectItem key={unit.id} value={unit.id}>
+                        {unit.unit_number}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
-              {validationErrors.unit && (
-                <p className="text-sm text-destructive mt-1">{validationErrors.unit}</p>
-              )}
             </div>
           </div>
           

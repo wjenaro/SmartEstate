@@ -13,7 +13,25 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DatePicker } from "@/components/ui/date-picker";
+// Custom DatePicker component
+interface DatePickerProps {
+  date?: Date;
+  setDate?: (date: Date | undefined) => void;
+}
+
+// Simplified DatePicker component as a fallback
+const DatePicker = ({ date, setDate }: DatePickerProps) => {
+  return (
+    <Input 
+      type="date" 
+      value={date ? date.toISOString().split('T')[0] : ''}
+      onChange={(e) => {
+        const newDate = e.target.value ? new Date(e.target.value) : undefined;
+        if (setDate) setDate(newDate);
+      }}
+    />
+  );
+};
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { User, Phone, FileText, Users, Loader2 } from "lucide-react";
@@ -102,9 +120,11 @@ export function TenantForm({ onClose, initialPropertyId }: TenantFormProps) {
     try {
       console.log("Submitting tenant with data:", values);
       
-      // Format dates for API
+      // Format dates for API and remove property_id which doesn't exist in tenants table
+      const { property_id, ...tenantData } = values;
+      
       const formattedValues = {
-        ...values,
+        ...tenantData,
         first_name: values.first_name,
         last_name: values.last_name,
         status: values.status || 'active',  // Making sure required fields are present
@@ -114,7 +134,14 @@ export function TenantForm({ onClose, initialPropertyId }: TenantFormProps) {
         entry_date: values.entry_date ? values.entry_date.toISOString().split('T')[0] : undefined,
       };
       
+      console.log("Sending tenant data to database:", formattedValues);
       await addTenant.mutateAsync(formattedValues as any);
+      
+      toast({
+        title: "Tenant Added",
+        description: "New tenant has been successfully added",
+      });
+      
       if (onClose) onClose();
     } catch (error) {
       console.error("Error submitting tenant form:", error);
@@ -310,13 +337,22 @@ export function TenantForm({ onClose, initialPropertyId }: TenantFormProps) {
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               </div>
                             ) : properties && Array.isArray(properties) && properties.length > 0 ? (
-                              properties.map(property => (
-                                property && typeof property === 'object' && 'id' in property && 'name' in property ? (
-                                  <SelectItem key={String(property.id)} value={String(property.id)}>
-                                    {String(property.name)}
+                              properties.map(property => {
+                                // Safely check if property exists and has required fields
+                                if (!property || typeof property !== 'object') return null;
+                                
+                                // Use type assertion to tell TypeScript this is a valid property object
+                                const propertyObj = property as { id: string; name: string };
+                                const id = propertyObj.id;
+                                const name = propertyObj.name;
+                                if (!id || !name) return null;
+                                
+                                return (
+                                  <SelectItem key={String(id)} value={String(id)}>
+                                    {String(name)}
                                   </SelectItem>
-                                ) : null
-                              ))
+                                );
+                              })
                             ) : (
                               <SelectItem disabled value="none">
                                 No properties available
@@ -355,13 +391,22 @@ export function TenantForm({ onClose, initialPropertyId }: TenantFormProps) {
                                 No units available for this property
                               </SelectItem>
                             ) : (
-                              filteredUnits.map(unit => (
-                                unit && typeof unit === 'object' && 'id' in unit && 'unit_number' in unit ? (
-                                  <SelectItem key={String(unit.id)} value={String(unit.id)}>
-                                    Unit {String(unit.unit_number)}
+                              filteredUnits.map(unit => {
+                                // Safely check if unit exists and has required fields
+                                if (!unit || typeof unit !== 'object') return null;
+                                
+                                // Use type assertion to tell TypeScript this is a valid unit object
+                                const unitObj = unit as { id: string; unit_number: string };
+                                const id = unitObj.id;
+                                const unitNumber = unitObj.unit_number;
+                                if (!id || !unitNumber) return null;
+                                
+                                return (
+                                  <SelectItem key={String(id)} value={String(id)}>
+                                    Unit {String(unitNumber)}
                                   </SelectItem>
-                                ) : null
-                              ))
+                                );
+                              })
                             )}
                           </SelectContent>
                         </Select>
@@ -482,30 +527,52 @@ export function TenantForm({ onClose, initialPropertyId }: TenantFormProps) {
           </TabsContent>
               <TabsContent value="emergency" className="space-y-4 mt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="emergencyName">Emergency Contact Name</Label>
-                    <Input id="emergencyName" placeholder="Enter full name" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="relationship">Relationship</Label>
-                    <Input id="relationship" placeholder="Enter relationship" />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="emergency_contact_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Emergency Contact Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter full name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="emergency_contact_relationship"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Relationship</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter relationship" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="emergencyPhone">Phone Number</Label>
-                    <Input id="emergencyPhone" placeholder="Enter phone number" />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="emergency_contact_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter phone number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <div className="space-y-2">
                     <Label htmlFor="emergencyEmail">Email Address</Label>
                     <Input id="emergencyEmail" placeholder="Enter email address" type="email" />
                   </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="emergencyAddress">Address</Label>
-                  <Textarea id="emergencyAddress" placeholder="Enter address" />
                 </div>
               </TabsContent>
             </Tabs>
@@ -548,6 +615,8 @@ export function TenantForm({ onClose, initialPropertyId }: TenantFormProps) {
                   <Button 
                     type="submit"
                     disabled={addTenant.isPending}
+                    className="w-full sm:w-auto"
+                    onClick={() => form.handleSubmit(onSubmit)()}
                   >
                     {addTenant.isPending && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
