@@ -33,6 +33,7 @@ const UNIT_TYPES = [
 
 interface PropertyFormProps {
   onClose?: () => void;
+  existingProperty?: any;
 }
 
 // Recurring bill types
@@ -46,7 +47,7 @@ const RECURRING_BILL_TYPES = [
   { id: "vat", label: "VAT" }
 ];
 
-export function PropertyForm({ onClose }: PropertyFormProps) {
+export function PropertyForm({ onClose, existingProperty }: PropertyFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const { createWithAccountId, isAuthenticated } = useAccountScoping();
@@ -83,6 +84,41 @@ export function PropertyForm({ onClose }: PropertyFormProps) {
   const [caretakerName, setCaretakerName] = useState("");
   const [caretakerPhone, setCaretakerPhone] = useState("");
   const [caretakerEmail, setCaretakerEmail] = useState("");
+  
+  // Initialize form with existing property data when editing
+  useEffect(() => {
+    if (existingProperty) {
+      // Basic info
+      setPropertyName(existingProperty.name || "");
+      setPropertyType(existingProperty.property_type || "");
+      setAddress(existingProperty.address || "");
+      setCity(existingProperty.city || "");
+      setCounty(existingProperty.county || "");
+      setPostalCode(existingProperty.postal_code || "");
+      setDescription(existingProperty.description || "");
+      
+      // Financial details
+      setWaterRate(existingProperty.water_rate || "");
+      setElectricityRate(existingProperty.electricity_rate || "");
+      setMPesaPaybill(existingProperty.mpesa_paybill || "");
+      setRentalPaymentPenalty(existingProperty.rental_payment_penalty || "");
+      setTaxRate(existingProperty.tax_rate || "");
+      setMembershipFee(existingProperty.membership_fee || "");
+      setPaymentInstructions(existingProperty.payment_instructions || "");
+      
+      // Additional information
+      setCompanyName(existingProperty.company_name || "");
+      setStreetName(existingProperty.street_name || "");
+      setOwnerPhone(existingProperty.owner_phone || "");
+      setYearBuilt(existingProperty.year_built || "");
+      setNotes(existingProperty.notes || "");
+      
+      // Caretaker information
+      setCaretakerName(existingProperty.caretaker_name || "");
+      setCaretakerPhone(existingProperty.caretaker_phone || "");
+      setCaretakerEmail(existingProperty.caretaker_email || "");
+    }
+  }, [existingProperty]);
   
   // Validate the current tab
   const validateCurrentTab = (): boolean => {
@@ -149,41 +185,23 @@ export function PropertyForm({ onClose }: PropertyFormProps) {
   
   // Save property to database
   const saveProperty = async () => {
-    // Validate all form fields
+    // Validate all fields
     const errors = validateForm();
-    setValidationErrors(errors);
     if (Object.keys(errors).length > 0) {
-      // Map error fields to their tabs
-      const errorTabs: {[key: string]: string} = {
-        propertyName: "basic-info",
-        propertyType: "basic-info",
-        address: "basic-info",
-        city: "basic-info",
-        waterRate: "financial",
-        electricityRate: "financial",
-        rentalPaymentPenalty: "financial",
-        taxRate: "financial"
-      };
-      
-      // Find which tab has errors
-      for (const [field, tab] of Object.entries(errorTabs)) {
-        if (errors[field]) {
-          setActiveTab(tab);
-          break;
-        }
+      setValidationErrors(errors);
+      // Find the first tab with errors
+      if (errors.propertyName || errors.propertyType || errors.address) {
+        setActiveTab("basic-info");
+      } else if (errors.waterRate || errors.electricityRate) {
+        setActiveTab("financial");
       }
       return;
     }
     
     setIsSubmitting(true);
-    setValidationErrors({});
     
     try {
-      // Ensure the user is authenticated
-      if (!isAuthenticated) {
-        throw new Error("User not authenticated or account not found");
-      }
-
+      // Prepare data for saving
       const propertyData = {
         name: propertyName,
         property_type: propertyType,
@@ -198,105 +216,109 @@ export function PropertyForm({ onClose }: PropertyFormProps) {
         rental_payment_penalty: rentalPaymentPenalty !== "" ? parseFloat(rentalPaymentPenalty.toString()) : null,
         tax_rate: taxRate !== "" ? parseFloat(taxRate.toString()) : null,
         membership_fee: membershipFee !== "" ? parseFloat(membershipFee.toString()) : null,
+        payment_instructions: paymentInstructions || null,
         company_name: companyName || null,
         street_name: streetName || null,
         owner_phone: ownerPhone || null,
+        year_built: yearBuilt || null,
         notes: notes || null,
         caretaker_name: caretakerName || null,
         caretaker_phone: caretakerPhone || null,
         caretaker_email: caretakerEmail || null,
-        // Note: account_id will be added by createWithAccountId
+        total_units: calculateTotalUnits()
       };
       
-      try {
-        // Insert property into database using account scoping utility
-        const { data, error } = await createWithAccountId('properties', propertyData, supabase as any);
+      let result;
+      
+      if (existingProperty) {
+        // Update existing property
+        console.log("Updating property", existingProperty.id, propertyData);
+        result = await supabase
+          .from('properties')
+          .update(propertyData)
+          .eq('id', existingProperty.id)
+          .select();
           
-        if (error) throw error;
+        if (result.error) {
+          throw result.error;
+        }
         
         toast({
-          title: "Property saved",
-          description: `${propertyName} has been successfully added.`,
+          title: "Property updated",
+          description: `${propertyName} has been successfully updated.`,
           variant: "default"
         });
-        
-        if (onClose) {
-          onClose();
-        }
-      } catch (saveError: any) {
-        console.error('Error saving property:', saveError);
-        
-        // If the error is about missing account_id column, try saving without it
-        if (saveError.message?.includes('account_id')) {
-          console.warn('account_id column may not exist, trying direct insert');
-          try {
-            // Remove account_id from propertyData and only include valid columns
-            // based on your database schema
-            const propertyDataWithoutAccount = {
-              name: propertyData.name,
-              property_type: propertyData.property_type,
-              address: propertyData.address,
-              city: propertyData.city || null,
-              county: propertyData.county || null,
-              postal_code: propertyData.postal_code || null,
-              description: propertyData.description || null,
-              water_rate: propertyData.water_rate || null,
-              electricity_rate: propertyData.electricity_rate || null,
-              mpesa_paybill: propertyData.mpesa_paybill || null,
-              rental_payment_penalty: propertyData.rental_payment_penalty || null,
-              tax_rate: propertyData.tax_rate || null,
-              membership_fee: propertyData.membership_fee || null,
-              payment_instructions: propertyData.payment_instructions || null,
-              company_name: propertyData.company_name || null,
-              street_name: propertyData.street_name || null,
-              notes: propertyData.notes || null,
-              owner_phone: propertyData.owner_phone || null,
-              caretaker_name: propertyData.caretaker_name || null,
-              // Missing in schema but referenced in form
-              unit_types: propertyData.unit_types || {},
-              recurring_bills: propertyData.recurring_bills || [],
-              created_by: user?.id || null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
+      } else {
+        // Create new property
+        console.log("Creating property with account scoping", propertyData);
+        try {
+          // Try with account scoping first
+          result = await createWithAccountId('properties', propertyData);
+          
+          if (result.error) {
+            throw result.error;
+          }
+        } catch (err) {
+          console.error("Error with account scoping, trying direct insert:", err);
+          // Fallback to direct insert if account scoping fails
+          result = await supabase
+            .from('properties')
+            .insert(propertyData)
+            .select();
             
-            // Try again without account_id, using as any to bypass TypeScript errors
-            const { data, error: fallbackError } = await supabase
-              .from('properties')
-              .insert(propertyDataWithoutAccount as any)
-              .select('*');
-              
-            if (fallbackError) throw fallbackError;
-            
-            toast({
-              title: "Property saved",
-              description: `${propertyName} has been successfully added.`,
-              variant: "default"
-            });
-            
-            if (onClose) {
-              onClose();
-            }
-            return; // Exit early if this succeeds
-          } catch (fallbackError) {
-            console.error("Fallback property save failed:", fallbackError);
-            // Continue to the general error handling
+          if (result.error) {
+            throw result.error;
           }
         }
         
-        // General error handling
-        setIsSubmitting(false);
         toast({
-          title: "Error saving property",
-          description: "There was a problem saving your property. Please try again.",
-          variant: "destructive"
+          title: "Property created",
+          description: `${propertyName} has been successfully added.`,
+          variant: "default"
         });
+      }
+      
+      console.log("Property operation successful:", result.data);
+      
+      // Clear form
+      setPropertyName("");
+      setPropertyType("");
+      setAddress("");
+      setCity("");
+      setCounty("");
+      setPostalCode("");
+      setDescription("");
+      setWaterRate("");
+      setElectricityRate("");
+      setMPesaPaybill("");
+      setRentalPaymentPenalty("");
+      setTaxRate("");
+      setMembershipFee("");
+      setPaymentInstructions("");
+      setCompanyName("");
+      setStreetName("");
+      setOwnerPhone("");
+      setYearBuilt("");
+      setNotes("");
+      setCaretakerName("");
+      setCaretakerPhone("");
+      setCaretakerEmail("");
+      setActiveTab("basic-info");
+      
+      // Close dialog if provided
+      if (onClose) {
+        onClose();
+      }
+      
+      // Refresh the page if editing an existing property to show the changes
+      if (existingProperty) {
+        window.location.reload();
       }
     } catch (error) {
       console.error('Error in property form submission:', error);
       toast({
-        title: "Error saving property",
-        description: "There was a problem saving the property to the database.",
+        title: existingProperty ? "Error updating property" : "Error creating property",
+        description: error.message || "There was a problem saving the property to the database.",
         variant: "destructive"
       });
     } finally {

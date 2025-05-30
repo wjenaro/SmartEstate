@@ -34,6 +34,7 @@ import Maintenance from "./pages/Maintenance";
 import Utilities from "./pages/Utilities";
 import NotFound from "./pages/NotFound";
 import ApplyMigration from "./pages/ApplyMigration";
+import PropertyDetail from "./pages/PropertyDetail";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,11 @@ const App = () => (
               <Route path="/properties" element={
                 <AuthGuard requireAuth={true} requireOnboarding={true}>
                   <Properties />
+                </AuthGuard>
+              } />
+              <Route path="/properties/:id" element={
+                <AuthGuard requireAuth={true} requireOnboarding={true}>
+                  <PropertyDetail />
                 </AuthGuard>
               } />
               <Route path="/units" element={
