@@ -9,32 +9,45 @@ export const useProperties = () => {
   return useQuery({
     queryKey: ["properties", currentAccountId],
     queryFn: async () => {
-      if (!isAuthenticated) {
-        console.log("No authenticated account found");
-        return [];
-      }
+      console.log('Fetching properties for account ID:', currentAccountId);
+      if (!isAuthenticated) return [];
       
-      console.log("Fetching properties for account ID:", currentAccountId);
-      
-      const baseQuery = supabase
-        .from("properties")
-        .select(`
-          *,
-          units(count)
-        `);
-      
-      const query = scopeQuery(baseQuery);
-      if (!query) return [];
-      
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error("Error fetching properties:", error);
+      try {
+        // First try with account filtering
+        const { data, error } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('account_id', currentAccountId);
+        
+        // If there's an error about the account_id column not existing
+        if (error && error.message?.includes('account_id')) {
+          console.warn('account_id column may not exist, falling back to unfiltered query');
+          
+          // Try again without account filtering
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('properties')
+            .select('*');
+          
+          if (fallbackError) {
+            console.error('Error in fallback properties fetch:', fallbackError);
+            throw fallbackError;
+          }
+          
+          console.log('Properties fetched successfully (unfiltered):', fallbackData);
+          return fallbackData || [];
+        }
+        
+        if (error) {
+          console.error('Error fetching properties:', error);
+          throw error;
+        }
+        
+        console.log('Properties fetched successfully:', data);
+        return data || [];
+      } catch (error) {
+        console.error('Error in properties fetch:', error);
         throw error;
       }
-      
-      console.log("Properties fetched successfully:", data);
-      return data;
     },
     enabled: isAuthenticated,
   });

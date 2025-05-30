@@ -184,7 +184,7 @@ type Property = {
   units: Unit[];
 };
 
-type ProcessedProperty = Property & {
+type ProcessedProperty = Omit<Property, 'units'> & {
   occupancyRate: number;
   units: {
     total: number;
@@ -235,7 +235,13 @@ export function PropertyList() {
 
   useEffect(() => {
     if (rawProperties) {
-      const processedProperties = rawProperties.map(calculatePropertyMetrics);
+      // Type cast the raw properties to match the expected Property type
+      const processedProperties = rawProperties.map((prop: any) => calculatePropertyMetrics({
+        id: prop.id,
+        name: prop.name || '',
+        address: prop.address || '',
+        units: prop.units || []
+      }));
       setProperties(processedProperties);
     }
   }, [rawProperties]);

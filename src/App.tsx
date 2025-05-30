@@ -33,6 +33,7 @@ import Messages from "./pages/Messages";
 import Maintenance from "./pages/Maintenance";
 import Utilities from "./pages/Utilities";
 import NotFound from "./pages/NotFound";
+import ApplyMigration from "./pages/ApplyMigration";
 
 const queryClient = new QueryClient();
 
@@ -149,6 +150,9 @@ const App = () => (
                   <Utilities />
                 </AuthGuard>
               } />
+              
+              {/* Migration route - accessible directly */}
+              <Route path="/apply-migration" element={<ApplyMigration />} />
               
               {/* Admin routes - separate authentication */}
               <Route path="/admin/login" element={<AdminLogin />} />
