@@ -126,13 +126,14 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
     try {
       setError(null);
       
-      // First try to get by auth_user_id
+      // First try to get by auth_user_id with explicit headers
       const { data, error } = await supabase
         .from('admin_users')
         .select('*')
         .eq('auth_user_id', authUserId)
         .eq('is_active', true)
-        .single();
+        .throwOnError()
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching admin user:', error);
@@ -155,14 +156,15 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
       } 
       
       // If not found by auth_user_id, try by email
-      const authUser = await supabase.auth.getUser();
-      if (authUser.data?.user?.email) {
+      // If we couldn't find by auth_user_id, try by email
+      if (!data && user?.email) {
         const { data: emailData, error: emailError } = await supabase
           .from('admin_users')
           .select('*')
-          .eq('email', authUser.data.user.email)
+          .eq('email', user.email)
           .eq('is_active', true)
-          .single();
+          .throwOnError()
+          .maybeSingle();
         
         if (!emailError && emailData) {
           // Link the admin account by updating auth_user_id

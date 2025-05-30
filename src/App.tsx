@@ -30,6 +30,8 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Documents from "./pages/Documents";
 import Messages from "./pages/Messages";
+import Maintenance from "./pages/Maintenance";
+import Utilities from "./pages/Utilities";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -135,6 +137,16 @@ const App = () => (
               <Route path="/messages" element={
                 <AuthGuard requireAuth={true} requireOnboarding={true}>
                   <Messages />
+                </AuthGuard>
+              } />
+              <Route path="/maintenance" element={
+                <AuthGuard requireAuth={true} requireOnboarding={true}>
+                  <Maintenance />
+                </AuthGuard>
+              } />
+              <Route path="/utilities" element={
+                <AuthGuard requireAuth={true} requireOnboarding={true}>
+                  <Utilities />
                 </AuthGuard>
               } />
               

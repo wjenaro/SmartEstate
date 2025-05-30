@@ -13,9 +13,52 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DatePicker } from "@/components/ui/date-picker";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Badge } from "@/components/ui/badge";
+import { User, Phone, FileText, Users } from "lucide-react";
 
-export function TenantForm() {
+interface Property {
+  id: string;
+  name: string;
+}
+
+interface Unit {
+  id: string;
+  unit_number: string;
+  property_id: string;
+}
+
+interface TenantFormProps {
+  properties?: Property[];
+  units?: Unit[];
+  onClose?: () => void;
+  propertyId?: string;
+  onPropertyChange?: (propertyId: string) => void;
+}
+
+export function TenantForm({
+  properties = [],
+  units = [],
+  onClose,
+  propertyId,
+  onPropertyChange
+}: TenantFormProps) {
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState("personal");
+  const [selectedPropertyId, setSelectedPropertyId] = useState(propertyId || "");
+  const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
+  
+  // Update filtered units when property changes
+  const handlePropertyChange = (id: string) => {
+    setSelectedPropertyId(id);
+    if (onPropertyChange) {
+      onPropertyChange(id);
+    }
+    
+    const filtered = units.filter(unit => unit.property_id === id);
+    setFilteredUnits(filtered);
+  };
 
   return (
     <Card className="w-full">
@@ -24,11 +67,27 @@ export function TenantForm() {
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="personal">Personal Details</TabsTrigger>
-            <TabsTrigger value="contact">Contact Info</TabsTrigger>
-            <TabsTrigger value="lease">Lease Details</TabsTrigger>
-            <TabsTrigger value="emergency">Emergency Contact</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+            <TabsTrigger value="personal" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              <span className="hidden md:inline">Personal Details</span>
+              <span className="md:hidden">Personal</span>
+            </TabsTrigger>
+            <TabsTrigger value="contact" className="flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              <span className="hidden md:inline">Contact Info</span>
+              <span className="md:hidden">Contact</span>
+            </TabsTrigger>
+            <TabsTrigger value="lease" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden md:inline">Lease Details</span>
+              <span className="md:hidden">Lease</span>
+            </TabsTrigger>
+            <TabsTrigger value="emergency" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden md:inline">Emergency Contact</span>
+              <span className="md:hidden">Emergency</span>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="personal" className="space-y-4 mt-4">
@@ -82,14 +141,50 @@ export function TenantForm() {
                 <Input id="email" placeholder="Enter email address" type="email" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" placeholder="Enter phone number" />
+                <Label htmlFor="phone">Phone Number*</Label>
+                <Input id="phone" placeholder="Enter phone number" required />
               </div>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="address">Current Address</Label>
               <Textarea id="address" placeholder="Enter current address" />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="property">Property*</Label>
+                <Select
+                  value={selectedPropertyId}
+                  onValueChange={handlePropertyChange}
+                >
+                  <SelectTrigger id="property">
+                    <SelectValue placeholder="Select property" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {properties.map((property) => (
+                      <SelectItem key={property.id} value={property.id}>
+                        {property.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unit">Unit*</Label>
+                <Select>
+                  <SelectTrigger id="unit">
+                    <SelectValue placeholder="Select unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredUnits.map((unit) => (
+                      <SelectItem key={unit.id} value={unit.id}>
+                        {unit.unit_number}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             <div className="space-y-2">
@@ -109,32 +204,10 @@ export function TenantForm() {
           </TabsContent>
           
           <TabsContent value="lease" className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="property">Property</Label>
-                <Select>
-                  <SelectTrigger id="property">
-                    <SelectValue placeholder="Select property" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Riverside Apartments</SelectItem>
-                    <SelectItem value="2">Parklands Residences</SelectItem>
-                    <SelectItem value="3">Westlands Heights</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="unit">Unit/House</Label>
-                <Select>
-                  <SelectTrigger id="unit">
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="A101">A101</SelectItem>
-                    <SelectItem value="A102">A102</SelectItem>
-                    <SelectItem value="B201">B201</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="leaseTerms">Lease Terms</Label>
+                <Textarea id="leaseTerms" placeholder="Enter lease terms and conditions" />
               </div>
             </div>
             
@@ -151,12 +224,47 @@ export function TenantForm() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="monthlyRent">Monthly Rent (KES)</Label>
-                <Input id="monthlyRent" placeholder="Enter monthly rent" />
+                <Label htmlFor="monthlyRent">Monthly Rent (KES)*</Label>
+                <Input id="monthlyRent" placeholder="Enter monthly rent" type="number" min="0" step="0.01" required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="deposit">Security Deposit (KES)</Label>
-                <Input id="deposit" placeholder="Enter deposit amount" />
+                <Input id="deposit" placeholder="Enter deposit amount" type="number" min="0" step="0.01" />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="rentPaymentStatus">Rent Payment Status*</Label>
+                <Select defaultValue="paid">
+                  <SelectTrigger id="rentPaymentStatus">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="paid">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-500 hover:bg-green-500">Paid</Badge>
+                        <span>Fully Paid</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="balance">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-yellow-500 hover:bg-yellow-500">Balance</Badge>
+                        <span>Has Balance</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="overdue">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-red-500 hover:bg-red-500">Overdue</Badge>
+                        <span>Payment Overdue</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="balanceAmount">Balance Amount (KES)</Label>
+                <Input id="balanceAmount" placeholder="Enter balance amount if any" type="number" min="0" step="0.01" />
               </div>
             </div>
             
@@ -206,7 +314,7 @@ export function TenantForm() {
         </Tabs>
         
         <div className="flex justify-between mt-8">
-          <Button variant="outline" type="button">
+          <Button variant="outline" type="button" onClick={onClose}>
             Cancel
           </Button>
           <div className="space-x-2">

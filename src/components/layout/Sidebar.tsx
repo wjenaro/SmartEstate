@@ -19,6 +19,8 @@ import {
   WalletCards,
   Calculator,
   Coins,
+  Wrench,
+  Droplet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -54,6 +56,13 @@ const navGroups: NavGroup[] = [
       { title: "Invoices", href: "/invoices", icon: Receipt },
       { title: "Payments", href: "/payments", icon: WalletCards },
       { title: "Expenses", href: "/expenses", icon: Calculator },
+    ]
+  },
+  {
+    title: "Property Management",
+    items: [
+      { title: "Maintenance", href: "/maintenance", icon: Wrench },
+      { title: "Utilities", href: "/utilities", icon: Droplet },
     ]
   },
   {
