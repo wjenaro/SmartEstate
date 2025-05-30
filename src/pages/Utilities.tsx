@@ -24,142 +24,44 @@ import {
 } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUtilityReadings, usePropertiesWithRates, useUnitsForUtilities } from "@/hooks/useUtilityReadings";
+import { useAccountScoping } from "@/hooks/useAccountScoping";
+import { AccountBadge } from "@/components/ui/account-badge";
 
-// Mock data for utility readings
-const utilityReadingsData = [
-  {
-    id: 1,
-    property: "Riverside Apartments",
-    unit: "A101",
-    utility_type: "water",
-    current_reading: 532.5,
-    previous_reading: 498.2,
-    reading_date: "2025-05-20",
-    month: "May",
-    year: 2025,
-    rate: 120,
-    amount: 4116,
-  },
-  {
-    id: 2,
-    property: "Riverside Apartments",
-    unit: "A101",
-    utility_type: "electricity",
-    current_reading: 7845,
-    previous_reading: 7520,
-    reading_date: "2025-05-20",
-    month: "May",
-    year: 2025,
-    rate: 25.5,
-    amount: 8287.5,
-  },
-  {
-    id: 3,
-    property: "Parklands Residences",
-    unit: "B205",
-    utility_type: "water",
-    current_reading: 425.8,
-    previous_reading: 405.3,
-    reading_date: "2025-05-18",
-    month: "May",
-    year: 2025,
-    rate: 120,
-    amount: 2460,
-  },
-  {
-    id: 4,
-    property: "Parklands Residences",
-    unit: "B205",
-    utility_type: "electricity",
-    current_reading: 5320,
-    previous_reading: 5120,
-    reading_date: "2025-05-18",
-    month: "May",
-    year: 2025,
-    rate: 25.5,
-    amount: 5100,
-  },
-  {
-    id: 5,
-    property: "Westlands Heights",
-    unit: "C304",
-    utility_type: "water",
-    current_reading: 328.4,
-    previous_reading: 310.5,
-    reading_date: "2025-05-15",
-    month: "May",
-    year: 2025,
-    rate: 120,
-    amount: 2148,
-  },
-  {
-    id: 6,
-    property: "Kilimani Plaza",
-    unit: "D102",
-    utility_type: "electricity",
-    current_reading: 9850,
-    previous_reading: 9450,
-    reading_date: "2025-05-22",
-    month: "May",
-    year: 2025,
-    rate: 25.5,
-    amount: 10200,
-  }
-];
-
-// Properties mock data
-const propertiesData = [
-  { id: "1", name: "Riverside Apartments", water_rate: 120, electricity_rate: 25.5 },
-  { id: "2", name: "Parklands Residences", water_rate: 120, electricity_rate: 25.5 },
-  { id: "3", name: "Westlands Heights", water_rate: 120, electricity_rate: 25.5 },
-  { id: "4", name: "Kilimani Plaza", water_rate: 120, electricity_rate: 25.5 },
-];
-
-// Units mock data
-const unitsData = [
-  { id: "101", unit_number: "A101", property_id: "1" },
-  { id: "102", unit_number: "A102", property_id: "1" },
-  { id: "103", unit_number: "B205", property_id: "2" },
-  { id: "104", unit_number: "C304", property_id: "3" },
-  { id: "105", unit_number: "D102", property_id: "4" },
-];
+// The utility readings, properties, and units data is now fetched with account isolation via custom hooks
 
 const Utilities = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { isAuthenticated } = useAccountScoping();
+  const { data: utilityReadings, isLoading: isReadingsLoading } = useUtilityReadings();
+  const { data: properties, isLoading: isPropertiesLoading } = usePropertiesWithRates();
+  const { data: units, isLoading: isUnitsLoading } = useUnitsForUtilities();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [utilityTypeFilter, setUtilityTypeFilter] = useState("all");
   const [propertyFilter, setPropertyFilter] = useState("all-properties");
   const [monthFilter, setMonthFilter] = useState("all-months");
   const [isAddReadingOpen, setIsAddReadingOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
-  const [isLoading, setIsLoading] = useState(true);
   
-  // Simulate data fetching
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
+  // Combined loading state
+  const isLoading = isReadingsLoading || isPropertiesLoading || isUnitsLoading;
   
   // Filter utility readings data based on filters and active tab
-  const filteredReadings = utilityReadingsData.filter((item) => {
+  const filteredReadings = utilityReadings ? utilityReadings.filter((item) => {
     const matchesSearch = 
       item.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.unit.toLowerCase().includes(searchQuery.toLowerCase());
       
     const matchesUtilityType = utilityTypeFilter === "all" || item.utility_type === utilityTypeFilter;
-    const matchesProperty = propertyFilter === "all-properties" || item.property === propertiesData.find(p => p.id === propertyFilter)?.name;
-    const matchesMonth = monthFilter === "all-months" || item.month === monthFilter;
+    const matchesProperty = propertyFilter === "all-properties" || item.property_id === propertyFilter;
+    const matchesMonth = monthFilter === "all-months" || `${item.month}-${item.year}` === monthFilter;
     const matchesTab = activeTab === "all" ? true : item.utility_type === activeTab;
     
     return matchesSearch && matchesUtilityType && matchesProperty && matchesMonth && matchesTab;
-  });
+  }) : [];
   
   // Get utility type icon
   const getUtilityIcon = (type: string) => {
@@ -251,9 +153,12 @@ const Utilities = () => {
     <MainLayout>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Utilities</h1>
+          <div className="flex items-center">
+            <h1 className="text-3xl font-bold tracking-tight">Utility Readings</h1>
+            <AccountBadge />
+          </div>
           <p className="text-muted-foreground">
-            Track water and electricity consumption and billing
+            Record and manage utility readings for your properties.
           </p>
         </div>
         <Button
@@ -273,7 +178,7 @@ const Utilities = () => {
             <div className="flex items-center">
               <Droplet className="h-5 w-5 text-blue-500 mr-2" />
               <span className="text-2xl font-bold">
-                {utilityReadingsData
+                {utilityReadings
                   .filter(item => item.utility_type === "water")
                   .reduce((sum, item) => sum + (item.current_reading - item.previous_reading), 0)
                   .toFixed(2)}
@@ -291,7 +196,7 @@ const Utilities = () => {
             <div className="flex items-center">
               <Zap className="h-5 w-5 text-yellow-500 mr-2" />
               <span className="text-2xl font-bold">
-                {utilityReadingsData
+                {utilityReadings
                   .filter(item => item.utility_type === "electricity")
                   .reduce((sum, item) => sum + (item.current_reading - item.previous_reading), 0)
                   .toFixed(2)}
@@ -309,7 +214,7 @@ const Utilities = () => {
             <div className="flex items-center">
               <LineChart className="h-5 w-5 text-primary mr-2" />
               <span className="text-2xl font-bold">
-                KES {utilityReadingsData
+                KES {utilityReadings
                   .reduce((sum, item) => sum + item.amount, 0)
                   .toLocaleString()}
               </span>
@@ -351,7 +256,7 @@ const Utilities = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-properties">All Properties</SelectItem>
-                {propertiesData.map((property) => (
+                {properties?.map((property) => (
                   <SelectItem key={property.id} value={property.id}>
                     {property.name}
                   </SelectItem>
@@ -504,8 +409,8 @@ const Utilities = () => {
       <Dialog open={isAddReadingOpen} onOpenChange={setIsAddReadingOpen}>
         <DialogContent className="max-w-3xl">
           <UtilityReadingForm 
-            properties={propertiesData}
-            units={unitsData}
+            properties={properties || []}
+            units={units || []}
             onClose={() => setIsAddReadingOpen(false)}
             onSuccess={() => {
               setIsAddReadingOpen(false);
@@ -513,7 +418,7 @@ const Utilities = () => {
                 title: "Utility reading recorded",
                 description: "The utility reading has been successfully recorded.",
               });
-              // In a real app, this would refetch the data
+              // This would trigger a refetch in a complete implementation
             }}
           />
         </DialogContent>

@@ -1,27 +1,32 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAccountScoping } from "@/hooks/useAccountScoping";
 
 export const useProperties = () => {
-  const { user, userAccount } = useAuth();
+  const { scopeQuery, isAuthenticated, currentAccountId } = useAccountScoping();
   
   return useQuery({
-    queryKey: ["properties", userAccount?.id],
+    queryKey: ["properties", currentAccountId],
     queryFn: async () => {
-      if (!user || !userAccount) {
-        console.log("No authenticated user or account found");
+      if (!isAuthenticated) {
+        console.log("No authenticated account found");
         return [];
       }
       
-      console.log("Fetching properties for account ID:", userAccount.id);
-      const { data, error } = await supabase
+      console.log("Fetching properties for account ID:", currentAccountId);
+      
+      const baseQuery = supabase
         .from("properties")
         .select(`
           *,
           units(count)
-        `)
-        .eq("account_id", userAccount.id);
+        `);
+      
+      const query = scopeQuery(baseQuery);
+      if (!query) return [];
+      
+      const { data, error } = await query;
       
       if (error) {
         console.error("Error fetching properties:", error);
@@ -31,45 +36,49 @@ export const useProperties = () => {
       console.log("Properties fetched successfully:", data);
       return data;
     },
-    enabled: !!userAccount?.id,
+    enabled: isAuthenticated,
   });
 };
 
 export const useUnits = (propertyId?: string) => {
-  const { user, userAccount } = useAuth();
+  const { scopeQuery, isAuthenticated, currentAccountId, verifyResourceOwnership } = useAccountScoping();
   
   return useQuery({
-    queryKey: ["units", propertyId, userAccount?.id],
+    queryKey: ["units", propertyId, currentAccountId],
     queryFn: async () => {
-      if (!user || !userAccount) {
-        console.log("No authenticated user or account found");
+      if (!isAuthenticated) {
+        console.log("No authenticated account found");
         return [];
       }
       
-      console.log("Fetching units for account ID:", userAccount.id);
+      console.log("Fetching units for account ID:", currentAccountId);
       
-      let query = supabase
+      let baseQuery = supabase
         .from("units")
-        .select("*, property:properties(account_id)")
-        .eq("properties.account_id", userAccount.id);
+        .select("*, property:properties(account_id)");
+      
+      // Ensure property belongs to current account
+      baseQuery = baseQuery.eq("properties.account_id", currentAccountId);
       
       if (propertyId) {
-        query = query.eq("property_id", propertyId);
+        baseQuery = baseQuery.eq("property_id", propertyId);
       }
       
-      const { data, error } = await query;
+      const { data, error } = await baseQuery;
       
       if (error) {
         console.error("Error fetching units:", error);
         throw error;
       }
       
-      // Filter out any units that don't belong to the current account
-      const filteredData = data.filter(unit => unit.property?.account_id === userAccount.id);
+      // Extra security: Filter out any units that don't belong to the current account
+      const filteredData = data.filter(unit => 
+        verifyResourceOwnership(unit.property?.account_id)
+      );
       
       console.log("Units fetched successfully:", filteredData);
       return filteredData;
     },
-    enabled: !!userAccount?.id,
+    enabled: isAuthenticated,
   });
 };

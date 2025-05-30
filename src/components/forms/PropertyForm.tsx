@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAccountScoping } from "@/hooks/useAccountScoping";
 
 // Unit type options
 const UNIT_TYPES = [
@@ -47,7 +48,8 @@ const RECURRING_BILL_TYPES = [
 
 export function PropertyForm({ onClose }: PropertyFormProps) {
   const { toast } = useToast();
-  const { user, userAccount } = useAuth();
+  const { user } = useAuth();
+  const { createWithAccountId, isAuthenticated } = useAccountScoping();
   const [activeTab, setActiveTab] = useState("basic-info");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
@@ -178,8 +180,8 @@ export function PropertyForm({ onClose }: PropertyFormProps) {
     setValidationErrors({});
     
     try {
-      // Ensure we have the user account
-      if (!user || !userAccount) {
+      // Ensure the user is authenticated
+      if (!isAuthenticated) {
         throw new Error("User not authenticated or account not found");
       }
 
@@ -204,17 +206,11 @@ export function PropertyForm({ onClose }: PropertyFormProps) {
         caretaker_name: caretakerName || null,
         caretaker_phone: caretakerPhone || null,
         caretaker_email: caretakerEmail || null,
-        account_id: userAccount?.id, // Associate with the user's account
-        created_by: user?.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        // Note: account_id will be added by createWithAccountId
       };
       
-      // Insert property into database
-      const { data, error } = await supabase
-        .from('properties')
-        .insert([propertyData])
-        .select('*');
+      // Insert property into database using account scoping utility
+      const { data, error } = await createWithAccountId('properties', propertyData, supabase);
         
       if (error) throw error;
       

@@ -12,52 +12,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Building, MapPin, Crown, CheckCircle2 } from "lucide-react";
+import { Plus, Search, Building, MapPin } from "lucide-react";
 import { PropertyForm } from "@/components/forms/PropertyForm";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
 import { useProperties } from "@/hooks/useProperties";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/hooks/useAuth";
-import { Badge } from "@/components/ui/badge";
+import { AccountBadge } from "@/components/ui/account-badge";
+import { useAccountScoping } from "@/hooks/useAccountScoping";
 
 const Properties = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
   const { data: properties, isLoading, error } = useProperties();
-  const { userAccount } = useAuth();
-  
-  // Determine account type for UI display
-  const getAccountTypeBadge = () => {
-    if (!userAccount) return null;
-    
-    if (userAccount.is_demo) {
-      return (
-        <Badge variant="outline" className="ml-2 bg-amber-50 text-amber-700 border-amber-200">
-          <Crown className="w-3 h-3 mr-1" /> Demo Account
-        </Badge>
-      );
-    }
-    
-    // Check if trial is active
-    const isTrialActive = userAccount.trial_ends_at && new Date(userAccount.trial_ends_at) > new Date();
-    
-    if (isTrialActive) {
-      const trialDaysLeft = Math.ceil((new Date(userAccount.trial_ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-      return (
-        <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
-          <CheckCircle2 className="w-3 h-3 mr-1" /> Trial ({trialDaysLeft} days left)
-        </Badge>
-      );
-    }
-    
-    // Default to standard account
-    return (
-      <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200">
-        <CheckCircle2 className="w-3 h-3 mr-1" /> Standard Account
-      </Badge>
-    );
-  };
+  const { isAuthenticated } = useAccountScoping();
   
   console.log("Properties data:", properties);
   console.log("Loading state:", isLoading);
@@ -79,7 +47,7 @@ const Properties = () => {
         <div>
           <div className="flex items-center">
             <h1 className="text-3xl font-bold tracking-tight">Properties</h1>
-            {getAccountTypeBadge()}
+            <AccountBadge />
           </div>
           <p className="text-muted-foreground">
             Manage your properties and view their status.
