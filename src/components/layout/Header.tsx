@@ -1,8 +1,11 @@
 
 import { useState } from "react";
-import { Bell, Search, User } from "lucide-react";
+import { Bell, Search, User, Menu } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useMobileMenu } from "./MainLayout";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,11 +28,31 @@ export function Header() {
     navigate("/");
   };
 
+  const isMobile = useIsMobile();
+  const { toggleMobileMenu } = useMobileMenu();
+
   return (
     <header className="border-b border-border bg-background py-2 px-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 lg:w-[320px]">
-          <div className="relative w-full">
+        {isMobile && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleMobileMenu}
+            className="mr-2"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+        
+        <div className={cn(
+          "flex items-center gap-2",
+          isMobile ? "flex-1" : "lg:w-[320px]"
+        )}>
+          <div className={cn(
+            "relative", 
+            isMobile ? "w-full max-w-[200px]" : "w-full"
+          )}>
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"

@@ -10,6 +10,15 @@ RentEase is a comprehensive property management SaaS application designed for la
 - **State Management**: React Context and React Query
 - **Routing**: React Router
 - **Build Tool**: Vite
+- **Mobile Support**: Responsive design with touch gestures and mobile-optimized components
+
+## Mobile Features
+
+### Responsive Design
+- **Adaptive Layouts**: Optimized for all screen sizes from mobile to desktop
+- **Touch Gestures**: Swipe support for opening/closing sidebar and interactive elements
+- **Mobile Navigation**: Slide-in sidebar with mobile-optimized navigation
+- **Responsive Components**: Tables transform to card views on mobile for better readability
 
 ## Project Structure
 
@@ -17,8 +26,11 @@ RentEase is a comprehensive property management SaaS application designed for la
 - `/src`: Main source code
   - `/components`: Reusable UI components
     - `/ui`: Shadcn UI components
-    - `/layout`: Layout components (Sidebar, Header)
+    - `/layout`: Layout components (Sidebar, Header, ResponsiveGrid, PageWrapper)
     - `/dashboard`: Dashboard-specific components
+  - `/hooks`: Custom React hooks
+    - `use-mobile.tsx`: Mobile detection hook
+    - `use-swipe.tsx`: Touch gesture support
     - `/forms`: Form components for data entry
   - `/pages`: Page components representing routes
   - `/lib`: Utility functions and shared logic

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useMobileMenu } from "./MainLayout";
 import {
   Building,
   Users,
@@ -25,6 +26,10 @@ type NavItem = {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+};
+
+interface SidebarProps {
+  isMobile?: boolean;
 };
 
 type NavGroup = {
@@ -61,15 +66,17 @@ const navGroups: NavGroup[] = [
   }
 ];
 
-export function Sidebar() {
+export function Sidebar({ isMobile = false }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { closeMobileMenu } = useMobileMenu();
   
   return (
     <div 
       className={cn(
         "bg-sidebar border-r border-sidebar-border min-h-screen transition-all duration-300",
-        collapsed ? "w-[70px]" : "w-[250px]"
+        collapsed ? "w-[70px]" : "w-[250px]",
+        isMobile ? "h-screen" : ""
       )}
     >
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
@@ -103,6 +110,7 @@ export function Sidebar() {
                       ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
                       : "text-sidebar-foreground hover:bg-sidebar-accent/50"
                   )}
+                  onClick={isMobile ? closeMobileMenu : undefined}
                 >
                   <item.icon className={cn("h-5 w-5", collapsed ? "mx-auto" : "")} />
                   {!collapsed && <span>{item.title}</span>}
