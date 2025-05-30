@@ -38,6 +38,7 @@ const Maintenance = () => {
   const [statusFilter, setStatusFilter] = useState("all-statuses");
   const [propertyFilter, setPropertyFilter] = useState("all-properties");
   const [isAddMaintenanceOpen, setIsAddMaintenanceOpen] = useState(false);
+  const [selectedMaintenance, setSelectedMaintenance] = useState<any>(null);
   
   // Fetch real-time data from Supabase
   const { data: maintenanceData, isLoading: isMaintenanceLoading } = useMaintenance();
@@ -45,6 +46,17 @@ const Maintenance = () => {
   const { data: unitsData, isLoading: isUnitsLoading } = useUnits();
   const addMaintenance = useAddMaintenance();
   const updateMaintenance = useUpdateMaintenance();
+  
+  // Handle status change
+  const handleStatusChange = (maintenanceId: string, newStatus: string) => {
+    const maintenance = maintenanceData.find(item => item.id === maintenanceId);
+    if (!maintenance) return;
+    
+    updateMaintenance.mutate({
+      ...maintenance,
+      status: newStatus
+    });
+  };
   
   // Combined loading state
   const isLoading = isMaintenanceLoading || isPropertiesLoading || isUnitsLoading;
@@ -118,7 +130,23 @@ const Maintenance = () => {
             <h3 className="font-medium">{item.property}</h3>
             <p className="text-sm text-muted-foreground">Unit: {item.unit}</p>
           </div>
-          {getStatusBadge(item.status)}
+          <div className="flex flex-col gap-2 items-end">
+            {getStatusBadge(item.status)}
+            <Select 
+              value={item.status} 
+              onValueChange={(value) => handleStatusChange(item.id, value)}
+            >
+              <SelectTrigger className="w-[140px] h-8">
+                <SelectValue placeholder="Change status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         
         <div className="space-y-2 mb-4">
@@ -294,7 +322,25 @@ const Maintenance = () => {
                       </div>
                     </TableCell>
                     <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{getStatusBadge(item.status)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(item.status)}
+                        <Select 
+                          value={item.status} 
+                          onValueChange={(value) => handleStatusChange(item.id, value)}
+                        >
+                          <SelectTrigger className="w-[120px] h-8">
+                            <SelectValue placeholder="Change status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="open">Open</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {item.expenseAmount 
                         ? `KES ${item.expenseAmount.toLocaleString()}` 

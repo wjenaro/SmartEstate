@@ -84,7 +84,7 @@ export function UtilityReadingForm({
   const fetchPreviousReadings = async (propertyId: string, unitId: string) => {
     try {
       const { data, error } = await supabase
-        .from('utility_readings')
+        .from('unit_utilities')
         .select('*')
         .eq('property_id', propertyId)
         .eq('unit_id', unitId)
@@ -256,6 +256,24 @@ export function UtilityReadingForm({
     setElectricityCalculatedAmount(amount);
   };
   
+  // Reset form fields to initial state
+  const resetForm = () => {
+    setSelectedUtilities(["water"]);
+    setWaterCurrentReading("");
+    setWaterPreviousReading("");
+    setWaterCalculatedAmount(null);
+    setElectricityCurrentReading("");
+    setElectricityPreviousReading("");
+    setElectricityCalculatedAmount(null);
+    setActiveTab("water");
+    setValidationErrors({});
+    
+    // Keep the current month and year
+    const currentDate = new Date();
+    setMonth(currentDate.toLocaleString('default', { month: 'long' }));
+    setYear(currentDate.getFullYear());
+  };
+  
   // Calculate all applicable amounts
   const calculateAllAmounts = () => {
     // Clear all relevant validation errors first
@@ -289,7 +307,10 @@ export function UtilityReadingForm({
     setIsSubmitting(true);
     
     try {
-      const readingDate = new Date(`${year}-${new Date(`${month} 1, 2000`).getMonth() + 1}-01`);
+      // Create date in YYYY-MM-DD format for SQL DATE type
+      const monthIndex = new Date(`${month} 1, 2000`).getMonth() + 1;
+      const formattedMonth = monthIndex < 10 ? `0${monthIndex}` : monthIndex.toString();
+      const readingDate = `${year}-${formattedMonth}-01`;
       const readings = [];
       
       // Prepare water reading data if selected
@@ -303,15 +324,13 @@ export function UtilityReadingForm({
           unit_id: selectedUnit,
           utility_type: "water",
           current_reading: Number(waterCurrentReading),
-          previous_reading: waterPreviousReading !== "" ? Number(waterPreviousReading) : 0,
-          consumption: waterConsumption,
-          rate: selectedProperty?.water_rate || 0,
-          amount: waterCalculatedAmount || (waterConsumption * (selectedProperty?.water_rate || 0)),
-          reading_date: readingDate.toISOString(),
+          previous_reading: waterPreviousReading !== "" ? Number(waterPreviousReading) : null,
+          reading_date: readingDate,
           month: month,
           year: year,
-          created_by: user?.id,
-          created_at: new Date().toISOString()
+          rate: selectedProperty?.water_rate || null,
+          amount: waterCalculatedAmount || (waterConsumption * (selectedProperty?.water_rate || 0)),
+          notes: "Added via SmartEstate system"
         });
       }
       
@@ -326,20 +345,21 @@ export function UtilityReadingForm({
           unit_id: selectedUnit,
           utility_type: "electricity",
           current_reading: Number(electricityCurrentReading),
-          previous_reading: electricityPreviousReading !== "" ? Number(electricityPreviousReading) : 0,
-          consumption: electricityConsumption,
-          rate: selectedProperty?.electricity_rate || 0,
-          amount: electricityCalculatedAmount || (electricityConsumption * (selectedProperty?.electricity_rate || 0)),
-          reading_date: readingDate.toISOString(),
+          previous_reading: electricityPreviousReading !== "" ? Number(electricityPreviousReading) : null,
+          reading_date: readingDate,
           month: month,
           year: year,
-          created_by: user?.id,
-          created_at: new Date().toISOString()
+          rate: selectedProperty?.electricity_rate || null,
+          amount: electricityCalculatedAmount || (electricityConsumption * (selectedProperty?.electricity_rate || 0)),
+          notes: "Added via SmartEstate system"
         });
       }
       
       // Insert readings into the database
       if (readings.length > 0) {
+        console.log('Saving utility readings:', readings);
+        
+        // Insert into unit_utilities table
         const { error } = await supabase
           .from('unit_utilities')
           .insert(readings);

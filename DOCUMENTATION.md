@@ -1,24 +1,33 @@
 
-# RentEase - Property Management System Documentation
+# SmartEstate - Property Management System Documentation
 
 ## 🏢 System Overview
 
-RentEase is a comprehensive SaaS property management platform designed for landlords and property agents. The system streamlines rental property management, tenant tracking, rent collection, invoicing, and communication through an intuitive web interface.
+SmartEstate is a comprehensive property management platform designed to streamline the management of real estate properties, units, tenants, maintenance, and utilities. The system provides landlords and property managers with tools to efficiently handle property-related operations through an intuitive web interface with full mobile responsiveness.
+
+```mermaid
+graph TD
+    A[Property Owner/Manager] -->|Logs in| B[SmartEstate Platform]
+    B --> C[Property Management]
+    B --> D[Tenant Management]
+    B --> E[Maintenance Tracking]
+    B --> F[Utility Management]
+    B --> G[Financial Management]
+    B --> H[Reporting & Analytics]
+```
 
 ## 📋 Table of Contents
 
 1. [Features Overview](#features-overview)
 2. [System Architecture](#system-architecture)
-3. [Mobile Responsiveness](#mobile-responsiveness)
-4. [Project Structure](#project-structure)
-5. [Key Components](#key-components)
-6. [Authentication System](#authentication-system)
-7. [Database Schema](#database-schema)
-8. [Subscription Management](#subscription-management)
-9. [Admin Dashboard](#admin-dashboard)
-10. [Component Relationships](#component-relationships)
-11. [Configuration & Setup](#configuration--setup)
-12. [Deployment Guide](#deployment-guide)
+3. [Data Models](#data-models)
+4. [UI Components](#ui-components)
+5. [Key Workflows](#key-workflows)
+6. [Recent Enhancements](#recent-enhancements)
+7. [Technical Implementation](#technical-implementation)
+8. [Mobile Responsiveness](#mobile-responsiveness)
+9. [Configuration & Setup](#configuration--setup)
+10. [Deployment Guide](#deployment-guide)
 
 ## 🌟 Features Overview
 
@@ -28,7 +37,385 @@ RentEase is a comprehensive SaaS property management platform designed for landl
 - **Tenant Management**: Complete tenant profiles with contact information and lease details
 - **Financial Tracking**: Invoice generation, payment tracking, and expense management
 
-### Dashboard & Analytics
+### Maintenance Management
+- **Issue Tracking**: Record and monitor maintenance issues by property and unit
+- **Status Updates**: Real-time status changes (Open, In Progress, Completed, Cancelled)
+- **Expense Tracking**: Record costs associated with maintenance work
+- **History Viewing**: View complete maintenance history for properties and units
+
+### Utility Management
+- **Reading Recording**: Capture water and electricity meter readings
+- **Consumption Calculation**: Automatic calculation of usage based on previous readings
+- **Rate-Based Billing**: Apply property-specific utility rates to calculate charges
+- **Multi-Utility Support**: Record both water and electricity in a single form with tabbed interface
+
+### Financial Features
+- **Invoice Generation**: Create professional invoices for tenants
+- **Payment Tracking**: Record and monitor rent and utility payments
+- **Expense Management**: Track property-related expenses
+- **Financial Reporting**: Generate reports on income, expenses, and cash flow
+
+### Tenant Relations
+- **Tenant Profiles**: Comprehensive tenant information management
+- **Lease Management**: Track lease agreements, terms, and renewal dates
+- **Communication Tools**: SMS notifications and messaging capabilities
+- **Document Storage**: Store and manage tenant-related documents
+
+## 🏗 System Architecture
+
+SmartEstate follows a modern React-based architecture with Supabase as the backend database and authentication provider.
+
+```mermaid
+graph LR
+    Client[Client Browser] -->|React App| Frontend[Frontend Layer]
+    Frontend -->|React Hooks| DataLayer[Data Access Layer]
+    DataLayer -->|Supabase Client| Backend[Supabase Backend]
+    Backend -->|PostgreSQL| Database[(Database)]
+    Backend -->|Authentication| Auth[Auth Service]
+```
+
+### Key Architectural Components:
+
+1. **Frontend Layer**: React-based UI components organized by feature
+2. **Data Access Layer**: Custom React hooks for data fetching and manipulation
+3. **Backend Services**: Supabase for database and authentication
+4. **Multi-tenancy**: Account-based data isolation for managing multiple properties
+
+## 📊 Data Models
+
+The system uses the following primary data models:
+
+```mermaid
+erDiagram
+    PROPERTIES ||--o{ UNITS : contains
+    PROPERTIES {
+        uuid id PK
+        text name
+        text address
+        text property_type
+        int total_units
+        numeric water_rate
+        numeric electricity_rate
+        uuid account_id FK
+    }
+    UNITS ||--o{ TENANTS : houses
+    UNITS {
+        uuid id PK
+        uuid property_id FK
+        text unit_number
+        text status
+        numeric rent_amount
+        uuid account_id FK
+    }
+    TENANTS {
+        uuid id PK
+        text first_name
+        text last_name
+        text status
+        uuid unit_id FK
+        date lease_start_date
+        date lease_end_date
+        numeric deposit_amount
+        uuid account_id FK
+    }
+    PROPERTIES ||--o{ MAINTENANCE : has
+    UNITS ||--o{ MAINTENANCE : needs
+    MAINTENANCE {
+        uuid id PK
+        uuid property_id FK
+        uuid unit_id FK
+        text status
+        text issue
+        text notes
+        numeric expense_amount
+    }
+    PROPERTIES ||--o{ UNIT_UTILITIES : records
+    UNITS ||--o{ UNIT_UTILITIES : measures
+    UNIT_UTILITIES {
+        uuid id PK
+        uuid property_id FK
+        uuid unit_id FK
+        text utility_type
+        numeric current_reading
+        numeric previous_reading
+        date reading_date
+        text month
+        int year
+        numeric rate
+        numeric amount
+    }
+```
+
+## 🎨 UI Components
+
+### Layout Components
+- **MainLayout**: Main application layout with header, sidebar, and content area
+- **PageWrapper**: Consistent container with max-width
+- **Sidebar**: Navigation menu with links to various sections
+- **Header**: Top bar with user info and global actions
+
+### Responsive Components
+- **ResponsiveGrid**: Adaptive grid layouts for different screen sizes
+- **ResponsiveForm**: Form layouts that adjust to screen size
+- **ResponsiveTable**: Tables that transform into card views on mobile
+
+### Form Components
+- **PropertyForm**: Create and edit property details
+- **UnitForm**: Manage units within properties
+- **TenantForm**: Handle tenant information and leases
+- **MaintenanceForm**: Record and update maintenance issues
+- **UtilityReadingForm**: Record utility readings with calculations
+
+## 🔄 Key Workflows
+
+### Property Management Workflow
+
+```mermaid
+graph TD
+    A[Add Property] --> B[Add Units]
+    B --> C[Assign Tenants]
+    C --> D[Record Utility Readings]
+    C --> E[Track Maintenance]
+    E --> F[Update Maintenance Status]
+    F --> G[Record Expenses]
+```
+
+### Maintenance Workflow
+
+```mermaid
+sequenceDiagram
+    actor PM as Property Manager
+    participant MF as Maintenance Form
+    participant API as Supabase API
+    participant DB as Database
+    
+    PM->>MF: Record Issue
+    MF->>API: Submit Data
+    API->>DB: Create Record
+    DB-->>API: Confirm
+    API-->>MF: Update UI
+    
+    Note over PM,DB: Later...
+    
+    PM->>MF: Update Status
+    MF->>API: Update Status
+    API->>DB: Modify Record
+    DB-->>API: Confirm
+    API-->>MF: Refresh UI
+```
+
+### Utility Reading Workflow
+
+```mermaid
+sequenceDiagram
+    actor PM as Property Manager
+    participant UF as Utility Form
+    participant API as Supabase API
+    participant DB as Database
+    
+    PM->>UF: Select Property
+    UF->>API: Get Units
+    API-->>UF: Return Units
+    PM->>UF: Select Unit
+    UF->>API: Get Previous Readings
+    API-->>UF: Return Previous Readings
+    PM->>UF: Enter Current Reading
+    UF->>UF: Calculate Consumption
+    PM->>UF: Submit Reading
+    UF->>API: Save Reading
+    API->>DB: Insert Record
+    DB-->>API: Confirm
+    API-->>UF: Update UI
+```
+
+## 🚀 Recent Enhancements
+
+### 1. Real-Time Data Integration
+
+- **Maintenance Management**:
+  - Replaced mock data with Supabase database calls using useMaintenance hook
+  - Added status editing capability for maintenance issues
+  - Connected MaintenanceForm to the database with proper field mapping
+  - Added data transformation for displaying maintenance records
+
+- **Utilities Management**:
+  - Implemented dynamic utility reading form
+  - Added real-time calculation of consumption based on readings
+  - Enhanced dialog accessibility with proper titles and descriptions
+  - Implemented error handling for failed database operations
+
+### 2. Enhanced Form Validation
+
+- Client-side validation for all forms (PropertyForm, UtilityReadingForm)
+- Field-specific validation rules (e.g., non-negative values, required fields)
+- Visual feedback for validation errors
+- Database constraint alignment
+
+### 3. Mobile Responsiveness
+
+- Implemented mobile-first design approach with tailwind breakpoints (sm, md, lg, xl)
+- Added responsive components:
+  - Mobile menu with slide-in sidebar
+  - Card views for mobile tables
+  - Adaptive grid layouts
+- Created `useIsMobile` hook for responsive logic
+
+### 4. Multi-Utility Reading Support
+
+- Combined water and electricity readings in a single form
+- Tabbed interface for utility type selection
+- Independent calculation for each utility type
+- Dynamic form fields based on selected utilities
+
+### 5. Database Schema Alignment
+
+- Mapped form fields directly to database columns
+- Fixed foreign key constraint errors by setting user_id to null when needed
+- Implemented proper account-based data isolation
+- Enhanced error handling for database operations
+
+## 🧰 Technical Implementation
+
+### React Hooks
+
+The application uses custom React hooks for data management:
+
+- **useProperties**: Fetch and manage property data
+- **useUnits**: Handle unit-related operations
+- **useTenants**: Manage tenant information
+- **useMaintenance**: Track maintenance issues
+- **useUtilityReadings**: Record and calculate utility readings
+- **useAccountScoping**: Ensure data isolation between accounts
+
+### Data Flow
+
+```mermaid
+flowchart TD
+    subgraph "UI Layer"
+        UI[UI Components]
+        Forms[Form Components]
+    end
+    
+    subgraph "Data Access Layer"
+        Hooks[Custom React Hooks]
+        Mutations[Mutation Hooks]
+        Queries[Query Hooks]
+    end
+    
+    subgraph "API Layer"
+        Supabase[Supabase Client]
+    end
+    
+    subgraph "Database"
+        DB[(PostgreSQL Database)]
+    end
+    
+    UI --> Forms
+    Forms --> Mutations
+    UI --> Queries
+    Mutations --> Hooks
+    Queries --> Hooks
+    Hooks --> Supabase
+    Supabase --> DB
+```
+
+### Form Implementation
+
+Forms follow a consistent pattern:
+
+1. **State Management**: React useState for form fields
+2. **Validation**: Client-side validation before submission
+3. **Submission**: Mutation hooks for database operations
+4. **Feedback**: Toast notifications for operation results
+5. **Reset**: Form reset after successful submission
+
+### Error Handling
+
+The application implements a multi-layered approach to error handling:
+
+1. **UI Level**: Form validation and visual feedback
+2. **Hook Level**: Try-catch blocks and error state management
+3. **API Level**: Error response handling
+4. **Database Level**: Constraint enforcement
+
+## 📱 Mobile Responsiveness
+
+The application transforms between desktop and mobile views:
+
+```mermaid
+graph TD
+    Desktop[Desktop View] -->|Table Layout| DT[Data Tables]
+    Desktop -->|Side Menu| DN[Navigation]
+    Desktop -->|Multi-column| DF[Forms]
+    
+    Mobile[Mobile View] -->|Card Layout| MC[Data Cards]
+    Mobile -->|Slide-in Menu| MN[Navigation]
+    Mobile -->|Single Column| MF[Forms]
+    
+    DT -->|useIsMobile hook| MC
+    DN -->|useIsMobile hook| MN
+    DF -->|useIsMobile hook| MF
+```
+
+Key responsive features include:
+- Collapsible sidebar that transforms to a mobile menu
+- Tables that convert to card layouts on small screens
+- Forms that adapt from multi-column to single-column layouts
+- Responsive typography and spacing
+
+## ⚙️ Configuration & Setup
+
+### Environment Setup
+
+1. **Prerequisites**:
+   - Node.js (v14+)
+   - npm or yarn
+   - Supabase account
+
+2. **Installation**:
+   ```bash
+   git clone https://github.com/yourusername/smartrent-management-suite.git
+   cd smartrent-management-suite
+   npm install
+   ```
+
+3. **Environment Variables**:
+   Create a `.env.local` file with:
+   ```
+   REACT_APP_SUPABASE_URL=your_supabase_url
+   REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+### Database Setup
+
+1. Create a new Supabase project
+2. Run the SQL scripts provided in the `database` directory
+3. Set up Row Level Security (RLS) policies for multi-tenant data isolation
+
+## 🚀 Deployment Guide
+
+### Production Deployment
+
+1. Build the production bundle:
+   ```bash
+   npm run build
+   ```
+
+2. Deploy to hosting provider (e.g., Netlify, Vercel):
+   ```bash
+   npx netlify deploy --prod
+   ```
+
+### Continuous Integration
+
+The project uses GitHub Actions for CI/CD:
+- Automatic linting and testing on pull requests
+- Automatic deployment to staging on merge to development
+- Automatic deployment to production on merge to main
+
+---
+
+Last Updated: May 30, 2025
 - **Dashboard Overview**: Visual statistics showing occupancy rates, revenue, and key metrics
 - **Financial Reports**: Track income, expenses, and generate custom reports
 - **Property Analytics**: Analyze performance across properties and units
