@@ -12,93 +12,46 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Building, Phone, Mail } from "lucide-react";
+import { Plus, Search, Building, Phone, Mail, Loader2 } from "lucide-react";
 import { TenantForm } from "@/components/forms/TenantForm";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useTenants } from "@/hooks/useTenants";
 
-// Mock data for tenants
-const tenantsData = [
-  {
-    id: 1,
-    name: "John Doe",
-    initials: "JD",
-    property: "Riverside Apartments",
-    unit: "A101",
-    phone: "0712345678",
-    email: "john.doe@example.com",
-    moveInDate: "2024-03-15",
-    leaseEnd: "2025-03-14",
-    balance: 0,
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    initials: "JS",
-    property: "Parklands Residences",
-    unit: "B205",
-    phone: "0723456789",
-    email: "jane.smith@example.com",
-    moveInDate: "2023-10-01",
-    leaseEnd: "2024-09-30",
-    balance: 5000,
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "Michael Johnson",
-    initials: "MJ",
-    property: "Westlands Heights",
-    unit: "C304",
-    phone: "0734567890",
-    email: "michael.johnson@example.com",
-    moveInDate: "2024-01-10",
-    leaseEnd: "2024-12-09",
-    balance: 0,
-    status: "active",
-  },
-  {
-    id: 4,
-    name: "Sarah Williams",
-    initials: "SW",
-    property: "Riverside Apartments",
-    unit: "A205",
-    phone: "0745678901",
-    email: "sarah.williams@example.com",
-    moveInDate: "2024-04-01",
-    leaseEnd: "2025-03-31",
-    balance: 0,
-    status: "active",
-  },
-  {
-    id: 5,
-    name: "Robert Brown",
-    initials: "RB",
-    property: "Kilimani Plaza",
-    unit: "D102",
-    phone: "0756789012",
-    email: "robert.brown@example.com",
-    moveInDate: "2024-02-15",
-    leaseEnd: "2024-08-14",
-    balance: 10000,
-    status: "notice",
-  },
-];
+// Utility function to get initials from name
+const getInitials = (firstName: string, lastName: string) => {
+  return (firstName?.[0] || '') + (lastName?.[0] || '');
+};
+
+// Format balance display
+const formatBalance = (amount: number | null | undefined) => {
+  if (amount === null || amount === undefined) {
+    return 0;
+  }
+  return amount;
+};
 
 const Tenants = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddTenantOpen, setIsAddTenantOpen] = useState(false);
+  const { data: tenants, isLoading, error } = useTenants();
   
-  const filteredTenants = tenantsData.filter(
-    (tenant) =>
-      tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tenant.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tenant.unit.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tenant.phone.includes(searchQuery) ||
-      tenant.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter tenants based on search query
+  const filteredTenants = tenants?.filter((tenant) => {
+    const fullName = `${tenant.first_name} ${tenant.last_name}`.toLowerCase();
+    const propertyName = tenant.unit?.property?.name?.toLowerCase() || '';
+    const unitNumber = tenant.unit?.unit_number?.toLowerCase() || '';
+    const phoneNumber = tenant.phone_number || '';
+    const email = tenant.email?.toLowerCase() || '';
+    
+    return searchQuery === '' || 
+      fullName.includes(searchQuery.toLowerCase()) ||
+      propertyName.includes(searchQuery.toLowerCase()) ||
+      unitNumber.includes(searchQuery.toLowerCase()) ||
+      phoneNumber.includes(searchQuery) ||
+      email.includes(searchQuery.toLowerCase());
+  }) || [];
 
   return (
     <MainLayout>
@@ -145,7 +98,21 @@ const Tenants = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTenants.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  <div className="flex justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-red-500">
+                  Error loading tenants. Please try again.
+                </TableCell>
+              </TableRow>
+            ) : filteredTenants.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
                   No tenants found.
@@ -158,16 +125,16 @@ const Tenants = () => {
                     <div className="flex items-center gap-3">
                       <Avatar>
                         <AvatarFallback className="bg-primary text-primary-foreground">
-                          {tenant.initials}
+                          {getInitials(tenant.first_name, tenant.last_name)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium">{tenant.name}</div>
+                        <div className="font-medium">{tenant.first_name} {tenant.last_name}</div>
                         <Badge 
                           variant={tenant.status === "active" ? "outline" : "destructive"}
                           className="mt-1"
                         >
-                          {tenant.status === "active" ? "Active" : "Notice Given"}
+                          {tenant.status === "active" ? "Active" : "Former"}
                         </Badge>
                       </div>
                     </div>
@@ -176,8 +143,10 @@ const Tenants = () => {
                     <div className="flex items-start gap-2">
                       <Building className="h-4 w-4 mt-0.5 text-muted-foreground" />
                       <div>
-                        <div>{tenant.property}</div>
-                        <div className="text-sm text-muted-foreground">Unit {tenant.unit}</div>
+                        <div>{tenant.unit?.property?.name || 'Not assigned'}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {tenant.unit?.unit_number ? `Unit ${tenant.unit.unit_number}` : 'No unit'}
+                        </div>
                       </div>
                     </div>
                   </TableCell>
@@ -185,24 +154,31 @@ const Tenants = () => {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <Phone className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm">{tenant.phone}</span>
+                        <span className="text-sm">{tenant.phone_number || 'Not provided'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Mail className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm">{tenant.email}</span>
+                        <span className="text-sm">{tenant.email || 'Not provided'}</span>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      <div>{new Date(tenant.moveInDate).toLocaleDateString()}</div>
-                      <div className="text-muted-foreground">to {new Date(tenant.leaseEnd).toLocaleDateString()}</div>
+                      {tenant.lease_start_date && (
+                        <div>{new Date(tenant.lease_start_date).toLocaleDateString()}</div>
+                      )}
+                      {tenant.lease_end_date && (
+                        <div className="text-muted-foreground">to {new Date(tenant.lease_end_date).toLocaleDateString()}</div>
+                      )}
+                      {!tenant.lease_start_date && !tenant.lease_end_date && (
+                        <div className="text-muted-foreground">No lease information</div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    {tenant.balance > 0 ? (
+                    {tenant.rent_payment_status === 'unpaid' ? (
                       <div className="text-rose-500 font-medium">
-                        KES {tenant.balance.toLocaleString()}
+                        KES {formatBalance(tenant.deposit_amount).toLocaleString()}
                       </div>
                     ) : (
                       <div className="text-emerald-500 font-medium">Paid</div>
@@ -222,7 +198,11 @@ const Tenants = () => {
 
       <Dialog open={isAddTenantOpen} onOpenChange={setIsAddTenantOpen}>
         <DialogContent className="max-w-4xl">
-          <TenantForm />
+          <DialogTitle className="text-xl font-semibold">Add New Tenant</DialogTitle>
+          <DialogDescription>
+            Fill in the tenant details across all sections to add a new tenant to your property.
+          </DialogDescription>
+          <TenantForm onClose={() => setIsAddTenantOpen(false)} />
         </DialogContent>
       </Dialog>
     </MainLayout>
