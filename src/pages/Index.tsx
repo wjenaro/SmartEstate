@@ -10,10 +10,13 @@ import { RecentActivities } from "@/components/dashboard/RecentActivities";
 import { useDashboardStats } from "@/hooks/useDashboardData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AccountBadge } from "@/components/ui/account-badge";
+import { useAccountScoping } from "@/hooks/useAccountScoping";
 
 const Index = () => {
   const { data: stats, isLoading, error } = useDashboardStats();
   const isMobile = useIsMobile();
+  const { isAuthenticated } = useAccountScoping();
   
   console.log("Dashboard stats:", stats);
   console.log("Dashboard loading state:", isLoading);
@@ -27,7 +30,10 @@ const Index = () => {
     <MainLayout>
       <PageWrapper>
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
+          <div className="flex items-center mb-1">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
+            <AccountBadge />
+          </div>
           <p className="text-muted-foreground">
             Welcome to your property management system.
           </p>

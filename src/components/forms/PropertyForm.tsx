@@ -114,7 +114,7 @@ export function PropertyForm({ onClose }: PropertyFormProps) {
   };
   
   // Validate entire form before submission
-  const validateForm = (): boolean => {
+  const validateForm = (): {[key: string]: string} => {
     const errors: {[key: string]: string} = {};
     
     // Basic info validation
@@ -137,8 +137,7 @@ export function PropertyForm({ onClose }: PropertyFormProps) {
       errors.taxRate = "Tax rate must be between 0 and 100";
     }
     
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    return errors;
   };
   
   // Handle tab changes with validation
@@ -152,8 +151,8 @@ export function PropertyForm({ onClose }: PropertyFormProps) {
   const saveProperty = async () => {
     // Validate all form fields
     const errors = validateForm();
+    setValidationErrors(errors);
     if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
       // Map error fields to their tabs
       const errorTabs: {[key: string]: string} = {
         propertyName: "basic-info",
@@ -210,7 +209,7 @@ export function PropertyForm({ onClose }: PropertyFormProps) {
       };
       
       // Insert property into database using account scoping utility
-      const { data, error } = await createWithAccountId('properties', propertyData, supabase);
+      const { data, error } = await createWithAccountId('properties', propertyData, supabase as any);
         
       if (error) throw error;
       

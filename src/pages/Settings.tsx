@@ -8,11 +8,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Settings as SettingsIcon, Bell, Shield, Moon, Globe } from "lucide-react";
+import { Settings as SettingsIcon, Bell, Shield, Moon, Globe, Database } from "lucide-react";
+import { DatabaseMigrations } from "@/components/settings/DatabaseMigrations";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AccountBadge } from "@/components/ui/account-badge";
+import { useAccountScoping } from "@/hooks/useAccountScoping";
 
 const Settings = () => {
   const { userAccount, signOut } = useAuth();
   const { toast } = useToast();
+  const { getAccountTypeInfo } = useAccountScoping();
+  const accountInfo = getAccountTypeInfo();
   
   const [settings, setSettings] = useState({
     emailNotifications: true,
@@ -51,18 +57,41 @@ const Settings = () => {
     <MainLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <div className="flex items-center">
+            <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+            <AccountBadge />
+          </div>
           <p className="text-muted-foreground">
             Manage your account preferences and application settings
           </p>
         </div>
 
-        <div className="grid gap-6">
+        <Tabs defaultValue="preferences" className="w-full">
+          <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-4">
+            <TabsTrigger value="preferences" className="flex items-center gap-2">
+              <SettingsIcon className="h-4 w-4" />
+              <span className="hidden md:inline">Preferences</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              <span className="hidden md:inline">Notifications</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              <span className="hidden md:inline">Security</span>
+            </TabsTrigger>
+            <TabsTrigger value="database" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              <span className="hidden md:inline">Database</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="preferences" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Bell className="h-5 w-5" />
-                <span>Notifications</span>
+                <SettingsIcon className="h-5 w-5" />
+                <span>Preferences</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -110,11 +139,14 @@ const Settings = () => {
             </CardContent>
           </Card>
 
+          </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <SettingsIcon className="h-5 w-5" />
-                <span>Preferences</span>
+                <Bell className="h-5 w-5" />
+                <span>Notifications</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -166,6 +198,9 @@ const Settings = () => {
             </CardContent>
           </Card>
 
+          </TabsContent>
+          
+          <TabsContent value="security" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -214,7 +249,28 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+          </TabsContent>
+          
+          <TabsContent value="database" className="space-y-6">
+            {accountInfo.type === 'standard' && (
+              <DatabaseMigrations />
+            )}
+            
+            {accountInfo.type !== 'standard' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Database Administration</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-amber-600">Database administration features are only available for standard accounts.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Please upgrade your account to access advanced database features and security settings.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </MainLayout>
   );
