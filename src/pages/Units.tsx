@@ -106,8 +106,9 @@ interface Unit {
   property: string;
   property_id: string;
   tenant: string | null;
+  tenant_name?: string | null;
   rent_amount: number;
-  status: string;
+  status: "vacant" | "occupied";
   features: string[];
 }
 
@@ -141,25 +142,40 @@ const Units = () => {
   const { data, error, isLoading, refetch } = useUnits();
   
   // Fetch properties for the dropdown
-  const { data: properties = [] } = useProperties();
+  const { data: propertiesData = [] } = useProperties();
   
-  // Format the unit data for display
+  // Convert properties data to Property[] type for correct typing and filter valid ones
+  const properties: Property[] = propertiesData
+    .filter((property: any) => property && property.id && property.name)
+    .map((property: any) => ({
+      id: property.id,
+      name: property.name
+    }));
+  
+  // Format the unit data for display with proper type guards
   const formattedUnits = data
-    ? data.map((unit: UnitType) => {
-        const property = properties.find((p: any) => p.id === unit.property_id) || { name: "Unknown Property" };
-        
-        return {
-          id: unit.id,
-          unit_number: unit.unit_number || "Unnamed Unit",
-          unit_type: UNIT_TYPES.find(t => t.id === unit.unit_type)?.label || unit.unit_type || "Other",
-          property: property.name,
-          property_id: unit.property_id,
-          tenant: unit.tenant_name || null,
-          rent_amount: unit.rent_amount || 0,
-          status: unit.status || "vacant",
-          features: unit.features || []
-        };
-      })
+    ? data
+        .filter((unit): unit is UnitType => {
+          // Type guard to ensure unit has required properties
+          return !!unit && typeof unit === 'object' && 'id' in unit;
+        })
+        .map((unit) => {
+          // Safely access property data with type checking
+          const property = properties.find((p) => p.id === unit.property_id) || { name: "Unknown Property" };
+          
+          return {
+            id: unit.id,
+            unit_number: unit.unit_number || "Unnamed Unit",
+            unit_type: UNIT_TYPES.find(t => t.id === unit.unit_type)?.label || unit.unit_type || "Other",
+            property: property.name,
+            property_id: unit.property_id,
+            tenant: unit.tenant_name || null,
+            tenant_name: unit.tenant_name,
+            rent_amount: unit.rent_amount || 0,
+            status: (unit.status as "vacant" | "occupied") || "vacant",
+            features: unit.features || []
+          } as Unit;
+        })
     : [];
   
   // Apply search and filters
@@ -185,8 +201,7 @@ const Units = () => {
     setIsEditDialogOpen(true);
   };
   
-  // Filter valid properties (ones with an ID)
-  const validProperties = properties.filter((property: any) => property.id) || [];
+  // validProperties is now handled during the initial properties filtering
   
   // Handle errors with toast notifications
   useEffect(() => {
@@ -512,7 +527,7 @@ const Units = () => {
             </DialogDescription>
           </DialogHeader>
           <UnitForm 
-            properties={validProperties}
+            properties={properties}
             initialData={selectedUnit} 
             isEditing={true}
             onSuccess={() => {
@@ -533,7 +548,7 @@ const Units = () => {
             </DialogDescription>
           </DialogHeader>
           <UnitForm 
-            properties={validProperties}
+            properties={properties}
             onSuccess={() => {
               setIsAddUnitOpen(false);
               toast({

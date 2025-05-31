@@ -72,10 +72,11 @@ const navGroups: NavGroup[] = [
   {
     title: "Admin",
     items: [
-      { title: "Dashboard", href: "/admin-dashboard", icon: LayoutDashboard },
-      { title: "Users", href: "/admin-users", icon: Users },
-      { title: "Subscriptions", href: "/admin-subscriptions", icon: BadgePercent },
-      { title: "Security", href: "/admin-security", icon: ShieldAlert },
+      { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+      { title: "Users", href: "/admin/users", icon: Users },
+      { title: "Subscriptions", href: "/admin/subscriptions", icon: BadgePercent },
+      { title: "Security", href: "/admin/security", icon: ShieldAlert },
+      { title: "Settings", href: "/admin/settings", icon: Settings },
     ]
   },
   {

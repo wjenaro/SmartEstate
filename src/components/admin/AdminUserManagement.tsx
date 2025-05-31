@@ -1,66 +1,763 @@
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// import { useState } from "react";
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Badge } from "@/components/ui/badge";
+// import { Button } from "@/components/ui/button";
+// import { Input } from "@/components/ui/input";
+// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+// import { Eye, Ban, CheckCircle, Search, Users, UserX, Crown, Loader2 } from "lucide-react";
+// import { useToast } from "@/components/ui/use-toast";
+// import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+
+// // Mock data and types
+// interface User {
+//   id: string;
+//   name: string;
+//   email: string;
+//   role: string;
+//   plan: string;
+//   properties: string;
+//   status: string;
+//   is_demo?: boolean;
+//   last_login: string;
+//   joinDate: string;
+// }
+
+// // Mock hooks (replace with actual implementations)
+// const useAdminUsers = () => {
+//   const mockUsers: User[] = [
+//     {
+//       id: "1",
+//       name: "John Doe",
+//       email: "john@example.com",
+//       role: "landlord",
+//       plan: "Pro",
+//       properties: "5",
+//       status: "active",
+//       last_login: "2 days ago",
+//       joinDate: "Jan 15, 2023"
+//     },
+//     {
+//       id: "2",
+//       name: "Jane Smith",
+//       email: "jane@example.com",
+//       role: "agent",
+//       plan: "Basic",
+//       properties: "2",
+//       status: "trial",
+//       is_demo: true,
+//       last_login: "5 hours ago",
+//       joinDate: "Mar 3, 2023"
+//     },
+//     {
+//       id: "3",
+//       name: "Mike Johnson",
+//       email: "mike@example.com",
+//       role: "landlord",
+//       plan: "Pro",
+//       properties: "8",
+//       status: "suspended",
+//       last_login: "2 weeks ago",
+//       joinDate: "Nov 20, 2022"
+//     }
+//   ];
+  
+//   return {
+//     users: mockUsers,
+//     loading: false,
+//     error: null
+//   };
+// };
+
+// const useAdminActions = () => {
+//   return {
+//     banUser: async (id: string) => true,
+//     activateUser: async (id: string) => true,
+//     promoteToAdmin: async (id: string) => true
+//   };
+// };
+
+// export const AdminUserManagement = () => {
+//   const [searchTerm, setSearchTerm] = useState("");
+//   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+//   const [confirmAction, setConfirmAction] = useState<{action: 'ban' | 'activate' | 'promote', userId: string} | null>(null);
+//   const { toast } = useToast();
+//   const { users, loading, error } = useAdminUsers();
+//   const { banUser, activateUser, promoteToAdmin } = useAdminActions();
+  
+//   // Helper function to get status badge color
+//   const getStatusColor = (status: string) => {
+//     switch (status) {
+//       case "active":
+//         return "bg-green-100 text-green-800";
+//       case "trial":
+//         return "bg-blue-100 text-blue-800";
+//       case "suspended":
+//         return "bg-red-100 text-red-800";
+//       case "pending":
+//         return "bg-yellow-100 text-yellow-800";
+//       default:
+//         return "bg-gray-100 text-gray-800";
+//     }
+//   };
+
+//   // Handle user actions
+//   const handleUserAction = async (userId: string, action: string) => {
+//     // In real app, this would make API calls
+//     toast({
+//       title: "Action Performed",
+//       description: `User ${action} action has been processed.`,
+//     });
+//     console.log(`Performing ${action} on user ${userId}`);
+//   };
+
+//   // Handle user promotion
+//   const handlePromoteUser = async (userId: string) => {
+//     toast({
+//       title: "User Promoted",
+//       description: "User has been promoted to Agent role.",
+//     });
+//     console.log(`Promoting user ${userId} to Agent`);
+//   };
+  
+//   // Filter users based on search term
+//   const filteredUsers = users.filter(user => 
+//     user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+//     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//     user.role.toLowerCase().includes(searchTerm.toLowerCase())
+//   );
+
+//   // Handle user actions with confirmation
+//   const handleConfirmAction = async () => {
+//     if (!confirmAction) return;
+    
+//     const { action, userId } = confirmAction;
+//     let success = false;
+    
+//     if (action === 'ban') {
+//       success = await banUser(userId);
+//     } else if (action === 'activate') {
+//       success = await activateUser(userId);
+//     } else if (action === 'promote') {
+//       success = await promoteToAdmin(userId);
+//     }
+    
+//     if (success) {
+//       setConfirmAction(null);
+//     }
+//   };
+  
+//   if (loading) {
+//     return (
+//       <Card className="w-full">
+//         <CardContent className="py-10">
+//           <div className="flex justify-center items-center">
+//             <Loader2 className="h-8 w-8 animate-spin" />
+//             <span className="ml-2">Loading user data...</span>
+//           </div>
+//         </CardContent>
+//       </Card>
+//     );
+//   }
+  
+//   if (error) {
+//     return (
+//       <Card className="w-full">
+//         <CardContent className="py-10 text-center text-red-500">
+//           Error loading user data: {error}
+//         </CardContent>
+//       </Card>
+//     );
+//   }
+
+//   // Helper function to get status badge color based on status
+//   const getStatusColor = (status: string) => {
+//     switch (status) {
+//       case "active":
+//         return "bg-green-100 text-green-800";
+//       case "trial":
+//         return "bg-blue-100 text-blue-800";
+//       case "suspended":
+//         return "bg-red-100 text-red-800";
+//       case "pending":
+//         return "bg-yellow-100 text-yellow-800";
+//       default:
+//         return "bg-gray-100 text-gray-800";
+//     }
+//   };
+  
+//   return (
+//     <div>
+//       <Card className="mb-6">
+//         <CardHeader>
+//           <CardTitle className="flex items-center space-x-2">
+//             <Users className="h-5 w-5" />
+//             <span>User Management</span>
+//           </CardTitle>
+//         </CardHeader>
+//         <CardContent>
+//           <div className="relative mb-4">
+//             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+//             <Input
+//               placeholder="Search users..."
+//               className="pl-8 w-full bg-muted/40"
+//               value={searchTerm}
+//               onChange={(e) => setSearchTerm(e.target.value)}
+//             />
+//           </div>
+          
+//           <div className="rounded-md border">
+//             <Table>
+//               <TableHeader>
+//                 <TableRow>
+//                   <TableHead>User</TableHead>
+//                   <TableHead>Plan</TableHead>
+//                   <TableHead>Properties</TableHead>
+//                   <TableHead>Status</TableHead>
+//                   <TableHead>Role</TableHead>
+//                   <TableHead>Join Date</TableHead>
+//                   <TableHead>Last Login</TableHead>
+//                   <TableHead className="text-right">Actions</TableHead>
+//                 </TableRow>
+//               </TableHeader>
+//               <TableBody>
+//                 {filteredUsers.length === 0 ? (
+//                   <TableRow>
+//                     <TableCell colSpan={8} className="h-24 text-center">
+//                       No users found matching your search.
+//                     </TableCell>
+//                   </TableRow>
+//                 ) : (
+//                   filteredUsers.map((user) => (
+//                     <TableRow key={user.id}>
+//                       <TableCell>
+//                         <div>
+//                           <div className="font-medium">{user.name}</div>
+//                           <div className="text-sm text-muted-foreground">{user.email}</div>
+//                         </div>
+//                       </TableCell>
+//                       <TableCell>
+//                         <Badge variant={user.plan === 'Professional' ? 'default' : user.plan === 'Demo' ? 'secondary' : 'outline'}>
+//                           {user.plan}
+//                         </Badge>
+//                       </TableCell>
+//                       <TableCell>{user.properties}</TableCell>
+//                       <TableCell>
+//                         <Badge variant={user.status === 'active' ? 'success' : user.status === 'trial' ? 'warning' : 'destructive'}>
+//                           {user.status}
+//                         </Badge>
+//                       </TableCell>
+//                       <TableCell>
+//                         <span className="capitalize">{user.role}</span>
+//                         {user.is_demo && (
+//                           <Badge variant="outline" className="ml-2">Demo</Badge>
+//                         )}
+//                       </TableCell>
+//                       <TableCell>{user.joinDate}</TableCell>
+//                       <TableCell>{user.last_login}</TableCell>
+//                       <TableCell className="text-right">
+//                         <div className="flex justify-end space-x-2">
+//                           <Button variant="outline" size="sm" onClick={() => setViewingUserId(user.id)}>
+//                             <Eye className="h-4 w-4" />
+//                           </Button>
+                          
+//                           {user.status === 'banned' ? (
+//                             <Button 
+//                               variant="outline" 
+//                               size="sm"
+//                               className="text-green-600 border-green-200 hover:bg-green-50"
+//                               onClick={() => setConfirmAction({ action: 'activate', userId: user.id })}
+//                             >
+//                               <CheckCircle className="h-4 w-4" />
+//                             </Button>
+//                           ) : (
+//                             <Button 
+//                               variant="outline" 
+//                               size="sm"
+//                               className="text-red-600 border-red-200 hover:bg-red-50"
+//                               onClick={() => setConfirmAction({ action: 'ban', userId: user.id })}
+//                             >
+//                               <Ban className="h-4 w-4" />
+//                             </Button>
+//                           )}
+                          
+//                           {user.role !== 'admin' && (
+//                             <Button 
+//                               variant="outline" 
+//                               size="sm"
+//                               className="text-purple-600 border-purple-200 hover:bg-purple-50"
+//                               onClick={() => setConfirmAction({ action: 'promote', userId: user.id })}
+//                             >
+//                               <Crown className="h-4 w-4" />
+//                             </Button>
+//                           )}
+//                         </div>
+//                       </TableCell>
+//                     </TableRow>
+//                   ))
+//                 )}
+//               </TableBody>
+//             </Table>
+//           </div>
+//         </CardContent>
+//       </Card>
+      
+//       {/* Confirmation Dialog */}
+//       <Dialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+//         <DialogContent>
+//           <DialogHeader>
+//             <DialogTitle>
+//               {confirmAction?.action === 'ban' && "Ban User"}
+//               {confirmAction?.action === 'activate' && "Activate User"}
+//               {confirmAction?.action === 'promote' && "Promote to Admin"}
+//             </DialogTitle>
+//             <DialogDescription>
+//               {confirmAction?.action === 'ban' && "Are you sure you want to ban this user? They will no longer be able to access the platform."}
+//               {confirmAction?.action === 'activate' && "Are you sure you want to activate this user?"}
+//               {confirmAction?.action === 'promote' && "Are you sure you want to promote this user to admin? They will have full access to the admin panel."}
+//             </DialogDescription>
+//           </DialogHeader>
+//           <DialogFooter>
+//             <Button variant="outline" onClick={() => setConfirmAction(null)}>Cancel</Button>
+//             <Button 
+//               variant={confirmAction?.action === 'ban' ? 'destructive' : 'default'}
+//               onClick={handleConfirmAction}
+//             >
+//               Confirm
+//             </Button>
+//           </DialogFooter>
+//         </DialogContent>
+//       </Dialog>
+      
+//       {/* User Details Dialog */}
+//       <Dialog open={!!viewingUserId} onOpenChange={(open) => !open && setViewingUserId(null)}>
+//         <DialogContent className="max-w-xl">
+//           <DialogHeader>
+//             <DialogTitle>User Details</DialogTitle>
+//           </DialogHeader>
+//           {viewingUserId && (
+//             <div className="space-y-4">
+//               {(() => {
+//                 const user = users.find(u => u.id === viewingUserId);
+//                 if (!user) return <p>User not found</p>;
+                
+//                 return (
+//                   <>
+//                     <div className="grid grid-cols-2 gap-4">
+//                       <div>
+//                         <h3 className="text-sm font-medium text-muted-foreground">Name</h3>
+//                         <p>{user.name}</p>
+//                       </div>
+//                       <div>
+//                         <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
+//                         <p>{user.email}</p>
+//                       </div>
+//                       <div>
+//                         <h3 className="text-sm font-medium text-muted-foreground">Role</h3>
+//                         <p className="capitalize">{user.role}</p>
+//                       </div>
+//                       <div>
+//                         <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
+//                         <p className="capitalize">{user.status}</p>
+//                       </div>
+//                       <div>
+//                         <h3 className="text-sm font-medium text-muted-foreground">Subscription Plan</h3>
+//                         <p>{user.plan}</p>
+//                       </div>
+//                       <div>
+//                         <h3 className="text-sm font-medium text-muted-foreground">Properties</h3>
+//                         <p>{user.properties}</p>
+//                       </div>
+//                       <div>
+//                         <h3 className="text-sm font-medium text-muted-foreground">Join Date</h3>
+//                         <p>{user.joinDate}</p>
+//                       </div>
+//                       <div>
+//                         <h3 className="text-sm font-medium text-muted-foreground">Last Login</h3>
+//                         <p>{user.last_login}</p>
+//                       </div>
+//                     </div>
+//                     <div className="flex justify-end space-x-2 pt-4">
+//                       <Button variant="outline" onClick={() => setViewingUserId(null)}>Close</Button>
+//                     </div>
+//                   </>
+//                 );
+//               })()}
+//             </div>
+//           )}
+//         </DialogContent>
+//       </Dialog>
+//     </div>
+//   );
+// };
+//             <Users className="h-5 w-5" />
+//             <span>User Management</span>
+//           </CardTitle>
+//           <div className="relative">
+//             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+//             <Input
+//               placeholder="Search users..."
+//               value={searchTerm}
+//               onChange={(e) => setSearchTerm(e.target.value)}
+//               className="pl-10 w-64"
+//             />
+//           </div>
+//         </div>
+//       </CardHeader>
+//       <CardContent>
+//         <Table>
+//           <TableHeader>
+//             <TableRow>
+//               <TableHead>User</TableHead>
+//               <TableHead>Role</TableHead>
+//               <TableHead>Plan</TableHead>
+//               <TableHead>Properties</TableHead>
+//               <TableHead>Status</TableHead>
+//               <TableHead>Last Login</TableHead>
+//               <TableHead>Actions</TableHead>
+//             </TableRow>
+//           </TableHeader>
+//           <TableBody>
+//             {filteredUsers.map((user) => (
+//               <TableRow key={user.id}>
+//                 <TableCell>
+//                   <div>
+//                     <div className="font-medium flex items-center space-x-2">
+//                       <span>{user.name}</span>
+//                       {user.is_demo && (
+//                         <Badge variant="outline" className="text-xs">
+//                           DEMO
+//                         </Badge>
+//                       )}
+//                     </div>
+//                     <div className="text-sm text-muted-foreground">{user.email}</div>
+//                   </div>
+//                 </TableCell>
+//                 <TableCell>
+//                   <Badge variant="outline">
+//                     {user.role}
+//                   </Badge>
+//                 </TableCell>
+//                 <TableCell>{user.plan}</TableCell>
+//                 <TableCell>{user.properties}</TableCell>
+//                 <TableCell>
+//                   <Badge className={getStatusColor(user.status)}>
+//                     {user.status}
+//                   </Badge>
+//                 </TableCell>
+//                 <TableCell className="text-sm text-muted-foreground">
+//                   {user.last_login}
+//                 </TableCell>
+//                 <TableCell>
+//                   <div className="flex space-x-1">
+//                     <Button 
+//                       variant="outline" 
+//                       size="icon" 
+//                       className="h-8 w-8"
+//                       onClick={() => handleUserAction(user.id, 'view')}
+//                     >
+//                       <Eye className="h-4 w-4" />
+//                     </Button>
+                    
+//                     {user.role === 'landlord' && (
+//                       <Button 
+//                         variant="outline" 
+//                         size="icon" 
+//                         className="h-8 w-8"
+//                         onClick={() => handlePromoteUser(user.id)}
+//                         title="Promote to Agent"
+//                       >
+//                         <Crown className="h-4 w-4" />
+//                       </Button>
+//                     )}
+                    
+//                     {user.status === 'active' ? (
+//                       <Button 
+//                         variant="outline" 
+//                         size="icon" 
+//                         className="h-8 w-8"
+//                         onClick={() => handleUserAction(user.id, 'suspend')}
+//                       >
+//                         <Ban className="h-4 w-4" />
+//                       </Button>
+//                     ) : (
+//                       <Button 
+//                         variant="outline" 
+//                         size="icon" 
+//                         className="h-8 w-8"
+//                         onClick={() => handleUserAction(user.id, 'activate')}
+//                       >
+//                         <CheckCircle className="h-4 w-4" />
+//                       </Button>
+//                     )}
+                    
+//                     <Button 
+//                       variant="outline" 
+//                       size="icon" 
+//                       className="h-8 w-8 text-red-600 hover:text-red-700"
+//                       onClick={() => handleUserAction(user.id, 'delete')}
+//                     >
+//                       <UserX className="h-4 w-4" />
+//                     </Button>
+//                   </div>
+//                 </TableCell>
+//               </TableRow>
+//             ))}
+//           </TableBody>
+//         </Table>
+        
+//         {filteredUsers.length === 0 && (
+//           <div className="text-center py-8">
+//             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+//             <p className="text-muted-foreground">No users found</p>
+//             <p className="text-sm text-muted-foreground">
+//               Try adjusting your search criteria
+//             </p>
+//           </div>
+//         )}
+//       </CardContent>
+//     </Card>
+//   );
+// };
+
+
+import { useState, useEffect } from "react";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Ban, CheckCircle, Search, Users, UserX, Crown, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useAdminUsers, useAdminActions } from "@/hooks/useAdminData";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import {
+  Eye, Ban, CheckCircle, Search, Users, Crown, Loader2,
+} from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useRealTimeSubscription } from "@/hooks/useRealTimeSubscription";
+import { useAccountScoping } from "@/hooks/useAccountScoping";
+
+// Real types from database schema
+interface User {
+  id: string;
+  email: string;
+  role: string;
+  first_name?: string;
+  last_name?: string;
+  status: string;
+  account_id?: string;
+  subscription_plan?: string;
+  created_at: string;
+  last_login?: string;
+  is_demo?: boolean;
+  property_count?: number;
+}
+
+// Custom hook for user management with Supabase
+const useAdminUsers = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { accountId } = useAccountScoping();
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      // Fetch users from Supabase
+      const { data, error: fetchError } = await supabase
+        .from('user_accounts')
+        .select(`
+          id,
+          email,
+          role,
+          first_name,
+          last_name,
+          status,
+          account_id,
+          subscription_plan,
+          created_at,
+          last_login,
+          is_demo
+        `);
+
+      if (fetchError) throw fetchError;
+
+      // Count properties for each user
+      const usersWithPropertyCount = await Promise.all(
+        data.map(async (user) => {
+          const { count, error: countError } = await supabase
+            .from('properties')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id);
+
+          return {
+            ...user,
+            property_count: count || 0
+          };
+        })
+      );
+
+      setUsers(usersWithPropertyCount);
+    } catch (err: any) {
+      console.error('Error fetching users:', err);
+      setError(err.message || 'Failed to fetch users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Set up real-time subscription
+  useRealTimeSubscription('user_accounts', ['user_accounts'], () => {
+    fetchUsers();
+  });
+
+  return {
+    users,
+    loading,
+    error,
+    refetch: fetchUsers,
+  };
+};
+
+// Custom hook for admin actions
+const useAdminActions = () => {
+  const { toast } = useToast();
+
+  const banUser = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_accounts')
+        .update({ status: 'suspended' })
+        .eq('id', id);
+
+      if (error) throw error;
+      return true;
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: `Failed to ban user: ${err.message}`,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  const activateUser = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_accounts')
+        .update({ status: 'active' })
+        .eq('id', id);
+
+      if (error) throw error;
+      return true;
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: `Failed to activate user: ${err.message}`,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  const promoteToAdmin = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_accounts')
+        .update({ role: 'admin' })
+        .eq('id', id);
+
+      if (error) throw error;
+      return true;
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: `Failed to promote user: ${err.message}`,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  return {
+    banUser,
+    activateUser,
+    promoteToAdmin,
+  };
+};
 
 export const AdminUserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
-  const [confirmAction, setConfirmAction] = useState<{action: 'ban' | 'activate' | 'promote', userId: string} | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{
+    action: "ban" | "activate" | "promote";
+    userId: string;
+  } | null>(null);
+
   const { toast } = useToast();
   const { users, loading, error } = useAdminUsers();
   const { banUser, activateUser, promoteToAdmin } = useAdminActions();
-  
-  // Filter users based on search term
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active": return "bg-green-100 text-green-800";
+      case "trial": return "bg-blue-100 text-blue-800";
+      case "suspended": return "bg-red-100 text-red-800";
+      case "pending": return "bg-yellow-100 text-yellow-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const filteredUsers = users.filter((user) =>
+    [user.first_name || '', user.last_name || '', user.email, user.role].some((field) =>
+      field.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
 
-  // Handle user actions with confirmation
   const handleConfirmAction = async () => {
     if (!confirmAction) return;
-    
+
     const { action, userId } = confirmAction;
     let success = false;
-    
-    if (action === 'ban') {
+
+    if (action === "ban") {
       success = await banUser(userId);
-    } else if (action === 'activate') {
+    } else if (action === "activate") {
       success = await activateUser(userId);
-    } else if (action === 'promote') {
+    } else if (action === "promote") {
       success = await promoteToAdmin(userId);
     }
-    
+
     if (success) {
+      toast({ title: "Success", description: `User ${action}d successfully.` });
       setConfirmAction(null);
     }
   };
-  
+
   if (loading) {
     return (
-      <Card className="w-full">
-        <CardContent className="py-10">
-          <div className="flex justify-center items-center">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading user data...</span>
-          </div>
+      <Card>
+        <CardContent className="py-10 flex justify-center items-center">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          <span>Loading user data...</span>
         </CardContent>
       </Card>
     );
   }
-  
+
   if (error) {
     return (
-      <Card className="w-full">
+      <Card>
         <CardContent className="py-10 text-center text-red-500">
           Error loading user data: {error}
         </CardContent>
@@ -76,133 +773,121 @@ export const AdminUserManagement = () => {
             <Users className="h-5 w-5" />
             <span>User Management</span>
           </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="relative mb-4">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search users..."
-              className="pl-8 w-full bg-muted/40"
+              className="pl-10 w-full sm:w-64 bg-muted/40"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Properties</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Join Date</TableHead>
+                <TableHead>Last Login</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Properties</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Join Date</TableHead>
-                  <TableHead>Last Login</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableCell colSpan={8} className="text-center py-6">
+                    No users found matching your search.
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
-                      No users found matching your search.
+              ) : (
+                filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="font-medium">{user.first_name || ''} {user.last_name || ''}</div>
+                      <div className="text-sm text-muted-foreground">{user.email}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge>{user.subscription_plan || 'Free'}</Badge>
+                    </TableCell>
+                    <TableCell>{user.property_count || 0}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(user.status || 'inactive')}>{user.status || 'inactive'}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="capitalize">{user.role}</span>
+                      {user.is_demo && (
+                        <Badge variant="outline" className="ml-2">Demo</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>{user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => setViewingUserId(user.id)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {user.status === "suspended" ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setConfirmAction({ action: "activate", userId: user.id })}
+                          >
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setConfirmAction({ action: "ban", userId: user.id })}
+                          >
+                            <Ban className="h-4 w-4 text-red-600" />
+                          </Button>
+                        )}
+                        {user.role !== "admin" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setConfirmAction({ action: "promote", userId: user.id })}
+                          >
+                            <Crown className="h-4 w-4 text-purple-600" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{user.name}</div>
-                          <div className="text-sm text-muted-foreground">{user.email}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.plan === 'Professional' ? 'default' : user.plan === 'Demo' ? 'secondary' : 'outline'}>
-                          {user.plan}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{user.properties}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.status === 'active' ? 'success' : user.status === 'trial' ? 'warning' : 'destructive'}>
-                          {user.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="capitalize">{user.role}</span>
-                        {user.is_demo && (
-                          <Badge variant="outline" className="ml-2">Demo</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>{user.joinDate}</TableCell>
-                      <TableCell>{user.last_login}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => setViewingUserId(user.id)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          
-                          {user.status === 'banned' ? (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-green-600 border-green-200 hover:bg-green-50"
-                              onClick={() => setConfirmAction({ action: 'activate', userId: user.id })}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                          ) : (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-red-600 border-red-200 hover:bg-red-50"
-                              onClick={() => setConfirmAction({ action: 'ban', userId: user.id })}
-                            >
-                              <Ban className="h-4 w-4" />
-                            </Button>
-                          )}
-                          
-                          {user.role !== 'admin' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                              onClick={() => setConfirmAction({ action: 'promote', userId: user.id })}
-                            >
-                              <Crown className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
-      
+
       {/* Confirmation Dialog */}
       <Dialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {confirmAction?.action === 'ban' && "Ban User"}
-              {confirmAction?.action === 'activate' && "Activate User"}
-              {confirmAction?.action === 'promote' && "Promote to Admin"}
+              {confirmAction?.action === "ban" && "Ban User"}
+              {confirmAction?.action === "activate" && "Activate User"}
+              {confirmAction?.action === "promote" && "Promote to Admin"}
             </DialogTitle>
             <DialogDescription>
-              {confirmAction?.action === 'ban' && "Are you sure you want to ban this user? They will no longer be able to access the platform."}
-              {confirmAction?.action === 'activate' && "Are you sure you want to activate this user?"}
-              {confirmAction?.action === 'promote' && "Are you sure you want to promote this user to admin? They will have full access to the admin panel."}
+              {confirmAction?.action === "ban" &&
+                "Are you sure you want to ban this user? They will be unable to access the platform."}
+              {confirmAction?.action === "activate" && "Activate this user to restore platform access?"}
+              {confirmAction?.action === "promote" &&
+                "This will give the user full admin access. Proceed?"}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmAction(null)}>Cancel</Button>
-            <Button 
-              variant={confirmAction?.action === 'ban' ? 'destructive' : 'default'}
+            <Button
+              variant={confirmAction?.action === "ban" ? "destructive" : "default"}
               onClick={handleConfirmAction}
             >
               Confirm
@@ -210,229 +895,65 @@ export const AdminUserManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* User Details Dialog */}
       <Dialog open={!!viewingUserId} onOpenChange={(open) => !open && setViewingUserId(null)}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>User Details</DialogTitle>
           </DialogHeader>
-          {viewingUserId && (
-            <div className="space-y-4">
-              {(() => {
-                const user = users.find(u => u.id === viewingUserId);
-                if (!user) return <p>User not found</p>;
-                
-                return (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Name</h3>
-                        <p>{user.name}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
-                        <p>{user.email}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Role</h3>
-                        <p className="capitalize">{user.role}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
-                        <p className="capitalize">{user.status}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Subscription Plan</h3>
-                        <p>{user.plan}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Properties</h3>
-                        <p>{user.properties}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Join Date</h3>
-                        <p>{user.joinDate}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Last Login</h3>
-                        <p>{user.last_login}</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-end space-x-2 pt-4">
-                      <Button variant="outline" onClick={() => setViewingUserId(null)}>Close</Button>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          )}
+          {viewingUserId && (() => {
+            const user = users.find(u => u.id === viewingUserId);
+            if (!user) return <p>User not found</p>;
+
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium">Name</h3>
+                    <p>{user.first_name ? `${user.first_name} ${user.last_name || ''}` : 'Not set'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">Email</h3>
+                    <p>{user.email}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">Role</h3>
+                    <p className="capitalize">{user.role}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">Status</h3>
+                    <p className="capitalize">{user.status || 'inactive'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">Subscription Plan</h3>
+                    <p>{user.subscription_plan || 'Free'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">Properties</h3>
+                    <p>{user.property_count || 0}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">Account ID</h3>
+                    <p className="text-xs truncate">{user.account_id || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">Join Date</h3>
+                    <p>{new Date(user.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">Last Login</h3>
+                    <p>{user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</p>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button variant="outline" onClick={() => setViewingUserId(null)}>Close</Button>
+                </div>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
-  );
-};
-      case "active":
-        return "bg-green-100 text-green-800";
-      case "trial":
-        return "bg-blue-100 text-blue-800";
-      case "suspended":
-        return "bg-red-100 text-red-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const handleUserAction = async (userId: string, action: string) => {
-    // In real app, this would make API calls
-    toast({
-      title: "Action Performed",
-      description: `User ${action} action has been processed.`,
-    });
-    console.log(`Performing ${action} on user ${userId}`);
-  };
-
-  const handlePromoteUser = async (userId: string) => {
-    toast({
-      title: "User Promoted",
-      description: "User has been promoted to agent role.",
-    });
-    console.log(`Promoting user ${userId}`);
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <Users className="h-5 w-5" />
-            <span>User Management</span>
-          </CardTitle>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
-            />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Properties</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Login</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <div>
-                    <div className="font-medium flex items-center space-x-2">
-                      <span>{user.name}</span>
-                      {user.is_demo && (
-                        <Badge variant="outline" className="text-xs">
-                          DEMO
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground">{user.email}</div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    {user.role}
-                  </Badge>
-                </TableCell>
-                <TableCell>{user.plan}</TableCell>
-                <TableCell>{user.properties}</TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(user.status)}>
-                    {user.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {user.last_login}
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-1">
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={() => handleUserAction(user.id, 'view')}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    
-                    {user.role === 'landlord' && (
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handlePromoteUser(user.id)}
-                        title="Promote to Agent"
-                      >
-                        <Crown className="h-4 w-4" />
-                      </Button>
-                    )}
-                    
-                    {user.status === 'active' ? (
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleUserAction(user.id, 'suspend')}
-                      >
-                        <Ban className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleUserAction(user.id, 'activate')}
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                      </Button>
-                    )}
-                    
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-8 w-8 text-red-600 hover:text-red-700"
-                      onClick={() => handleUserAction(user.id, 'delete')}
-                    >
-                      <UserX className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        
-        {filteredUsers.length === 0 && (
-          <div className="text-center py-8">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No users found</p>
-            <p className="text-sm text-muted-foreground">
-              Try adjusting your search criteria
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
   );
 };

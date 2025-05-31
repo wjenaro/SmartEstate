@@ -167,17 +167,37 @@ const App = () => (
               {/* Migration route - accessible directly */}
               <Route path="/apply-migration" element={<ApplyMigration />} />
               
-              {/* Admin routes - separate authentication */}
+              {/* Admin routes - separate authentication and fully under /admin path */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
-              <Route path="/admin-dashboard" element={
+              <Route path="/admin" element={
                 <AdminAuthGuard>
                   <AdminDashboard />
                 </AdminAuthGuard>
               }/>
-              <Route path="/admin-subscriptions" element={
+              <Route path="/admin/dashboard" element={
+                <AdminAuthGuard>
+                  <AdminDashboard />
+                </AdminAuthGuard>
+              }/>
+              <Route path="/admin/users" element={
+                <AdminAuthGuard>
+                  <AdminDashboard />
+                </AdminAuthGuard>
+              }/>
+              <Route path="/admin/subscriptions" element={
                 <AdminAuthGuard>
                   <AdminSubscriptions />
+                </AdminAuthGuard>
+              }/>
+              <Route path="/admin/security" element={
+                <AdminAuthGuard>
+                  <AdminDashboard />
+                </AdminAuthGuard>
+              }/>
+              <Route path="/admin/settings" element={
+                <AdminAuthGuard>
+                  <AdminDashboard />
                 </AdminAuthGuard>
               }/>
               

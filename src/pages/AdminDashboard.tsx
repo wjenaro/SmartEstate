@@ -1,9 +1,8 @@
 
 import { useState } from "react";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminUserManagement } from "@/components/admin/AdminUserManagement";
 import { AdminSubscriptionOverview } from "@/components/admin/AdminSubscriptionOverview";
 import { AdminPaymentTransactions } from "@/components/admin/AdminPaymentTransactions";
@@ -14,17 +13,14 @@ import {
   DollarSign, 
   CreditCard, 
   TrendingUp, 
-  LogOut,
-  Settings,
   BarChart,
-  Shield,
   Building,
-  Loader2
+  Loader2,
+  Settings
 } from "lucide-react";
 import { useAdminStats } from "@/hooks/useAdminData";
 
 const AdminDashboard = () => {
-  const { adminUser, signOut } = useAdminAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const { stats, loading: statsLoading, error: statsError } = useAdminStats();
 
@@ -32,74 +28,33 @@ const AdminDashboard = () => {
   const statsData = statsLoading ? [] : [
     {
       title: "Total Users",
-      value: stats?.totalUsers.toLocaleString() || "0",
-      change: `${stats?.monthlyChange.users > 0 ? "+" : ""}${stats?.monthlyChange.users.toFixed(1)}% from last month`,
+      value: stats?.totalUsers?.toLocaleString() || "0",
+      change: `${stats?.monthlyChange?.users > 0 ? "+" : ""}${stats?.monthlyChange?.users?.toFixed(1) || "0"}% from last month`,
       icon: Users,
     },
     {
       title: "Monthly Revenue",
-      value: `KES ${stats?.totalRevenue.toLocaleString() || "0"}`,
-      change: `${stats?.monthlyChange.revenue > 0 ? "+" : ""}${stats?.monthlyChange.revenue.toFixed(1)}% from last month`, 
+      value: `KES ${stats?.totalRevenue?.toLocaleString() || "0"}`,
+      change: `${stats?.monthlyChange?.revenue > 0 ? "+" : ""}${stats?.monthlyChange?.revenue?.toFixed(1) || "0"}% from last month`, 
       icon: DollarSign,
     },
     {
       title: "Active Subscriptions",
-      value: stats?.activeSubscriptions.toLocaleString() || "0",
-      change: `${stats?.monthlyChange.subscriptions > 0 ? "+" : ""}${stats?.monthlyChange.subscriptions.toFixed(1)}% from last month`,
+      value: stats?.activeSubscriptions?.toLocaleString() || "0",
+      change: `${stats?.monthlyChange?.subscriptions > 0 ? "+" : ""}${stats?.monthlyChange?.subscriptions?.toFixed(1) || "0"}% from last month`,
       icon: CreditCard,
     },
     {
       title: "Growth Rate",
-      value: `${stats?.growthRate.toFixed(1) || "0"}%`,
-      change: `${stats?.monthlyChange.growthRate > 0 ? "+" : ""}${stats?.monthlyChange.growthRate.toFixed(1)}% from last month`,
+      value: `${stats?.growthRate?.toFixed(1) || "0"}%`,
+      change: `${stats?.monthlyChange?.growthRate > 0 ? "+" : ""}${stats?.monthlyChange?.growthRate?.toFixed(1) || "0"}% from last month`,
       icon: TrendingUp,
     },
   ];
 
-  const handleSignOut = async () => {
-    await signOut();
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Admin Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-              <Shield className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Administrator Portal</h1>
-              <p className="text-sm text-muted-foreground">
-                RentEase SaaS Management Console
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {adminUser && (
-              <div className="text-right">
-                <p className="font-medium">{adminUser.email}</p>
-                <p className="text-sm text-muted-foreground capitalize">
-                  {adminUser.role.replace('_', ' ')}
-                </p>
-              </div>
-            )}
-            
-            <Button 
-              variant="outline" 
-              onClick={handleSignOut}
-              className="border-red-200 text-red-600 hover:bg-red-50"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6">
+    <AdminLayout>
+      <div>
         {/* Overview Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
           {statsLoading ? (
@@ -112,7 +67,7 @@ const AdminDashboard = () => {
           ) : statsError ? (
             <Card className="col-span-4 py-8">
               <CardContent className="text-center text-red-500">
-                Error loading dashboard data: {statsError}
+                Error loading dashboard data
               </CardContent>
             </Card>
           ) : (
@@ -174,19 +129,19 @@ const AdminDashboard = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between">
                       <span>Total Properties</span>
-                      <span className="font-medium">{stats?.totalProperties.toLocaleString() || "0"}</span>
+                      <span className="font-medium">{stats?.totalProperties?.toLocaleString() || "0"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Total Units</span>
-                      <span className="font-medium">{stats?.totalUnits.toLocaleString() || "0"}</span>
+                      <span className="font-medium">{stats?.totalUnits?.toLocaleString() || "0"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Active Tenants</span>
-                      <span className="font-medium">{stats?.activeTenants.toLocaleString() || "0"}</span>
+                      <span className="font-medium">{stats?.activeTenants?.toLocaleString() || "0"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Demo Accounts</span>
-                      <span className="font-medium">{stats?.demoAccounts.toLocaleString() || "0"}</span>
+                      <span className="font-medium">{stats?.demoAccounts?.toLocaleString() || "0"}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -211,7 +166,7 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 
