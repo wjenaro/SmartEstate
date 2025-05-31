@@ -33,6 +33,7 @@ const UNIT_TYPES = [
 
 interface PropertyFormProps {
   onClose?: () => void;
+  onSuccess?: () => void;
   existingProperty?: any;
 }
 
@@ -47,7 +48,7 @@ const RECURRING_BILL_TYPES = [
   { id: "vat", label: "VAT" }
 ];
 
-export function PropertyForm({ onClose, existingProperty }: PropertyFormProps) {
+export function PropertyForm({ onClose, onSuccess, existingProperty }: PropertyFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const { createWithAccountId, isAuthenticated } = useAccountScoping();
@@ -249,6 +250,13 @@ export function PropertyForm({ onClose, existingProperty }: PropertyFormProps) {
           description: `${propertyName} has been successfully updated.`,
           variant: "default"
         });
+        
+        // Call onSuccess callback if provided
+        if (onSuccess) {
+          onSuccess();
+        } else if (onClose) {
+          onClose();
+        }
       } else {
         // Create new property
         console.log("Creating property with account scoping", propertyData);

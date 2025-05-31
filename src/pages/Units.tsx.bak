@@ -120,71 +120,64 @@ const Units = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  const { data: units = [], isLoading, error, refetch } = useUnits();
+  const { data: properties = [], isLoading: propertiesLoading } = useProperties();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
-  // Detect mobile viewport
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
-  // Setup real-time subscriptions
+  // Subscribe to real-time updates
   useRealTimeSubscription('units', ['units']);
   
-  // Fetch units data
-  const { data, error, isLoading, refetch } = useUnits();
-  
-  // Fetch properties for the dropdown
-  const { data: properties = [] } = useProperties();
-  
-  // Format the unit data for display
-  const formattedUnits = data
-    ? data.map((unit: UnitType) => {
-        const property = properties.find((p: any) => p.id === unit.property_id) || { name: "Unknown Property" };
-        
-        return {
-          id: unit.id,
-          unit_number: unit.unit_number || "Unnamed Unit",
-          unit_type: UNIT_TYPES.find(t => t.id === unit.unit_type)?.label || unit.unit_type || "Other",
-          property: property.name,
-          property_id: unit.property_id,
-          tenant: unit.tenant_name || null,
-          rent_amount: unit.rent_amount || 0,
-          status: unit.status || "vacant",
-          features: unit.features || []
-        };
-      })
-    : [];
-  
-  // Apply search and filters
-  const filteredUnits = formattedUnits.filter((unit: Unit) => {
-    const matchesSearch = 
-      unit.unit_number.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      unit.property.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (unit.tenant && unit.tenant.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Process units to match the format needed for display
+  const processedUnits = units.map(unit => {
+    // Type guard to ensure we're only processing valid unit objects
+    if (!unit || typeof unit !== 'object' || 'error' in unit) {
+      console.error('Error processing unit:', unit);
+      return null;
+    }
     
-    const matchesStatus = statusFilter === "all" || unit.status === statusFilter;
+    // Use type assertion with a more specific type to address property access issues
+    const unitData = unit as any;
     
-    return matchesSearch && matchesStatus;
-  });
+    return {
+      id: unitData.id,
+      unit_number: unitData.unit_number,
+      unit_type: unitData.unit_type,
+      property: unitData.property?.name || 'Unknown Property',
+      property_id: unitData.property_id,
+      tenant: unitData.tenants?.[0] ? `${unitData.tenants[0].first_name} ${unitData.tenants[0].last_name}` : null,
+      rent_amount: unitData.rent_amount || 0,
+      status: unitData.status,
+      features: unitData.features || []
+    };
+  }).filter(Boolean) as Unit[];
+  
+  // Filter units based on search term and status
+  const filteredUnits = processedUnits
+    .filter(
+      (unit) =>
+        unit.unit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        unit.property.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        unit.unit_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (unit.tenant && unit.tenant.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+    .filter((unit) => statusFilter === "all" || unit.status === statusFilter);
 
-  // Handle unit click to navigate to unit detail
+  // Navigate to unit details page
   const handleUnitClick = (unit: Unit) => {
     navigate(`/units/${unit.id}`);
   };
-  
-  // Handle edit unit dialog
+
   const handleEditUnit = (unit: Unit) => {
-    setSelectedUnit(unit);
+    setSelectedUnit({
+      ...unit,
+      unit_number: unit.unit_number,
+      unit_type: unit.unit_type,
+      rent_amount: unit.rent_amount
+    });
     setIsEditDialogOpen(true);
   };
-  
+
   // Filter valid properties (ones with an ID)
   const validProperties = properties.filter((property: any) => property.id) || [];
   
@@ -205,8 +198,13 @@ const Units = () => {
     if (!selectedUnit) return;
     
     try {
-      // Call your API to delete the unit
-      // const { error } = await supabase.from('units').delete().match({ id: selectedUnit.id });
+      toast({
+        title: "Deleting unit",
+        description: "Please wait while we delete this unit..."
+      });
+      
+      // Implement actual delete logic here
+      // const { error } = await supabase.from('units').delete().eq('id', selectedUnit.id);
       
       // if (error) throw error;
       
@@ -284,9 +282,40 @@ const Units = () => {
               <Download className="h-4 w-4" />
               Export
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => refetch()}
+              title="Refresh data"
+              aria-label="Refresh units"
+            >
+              <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                <path d="M16 21h5v-5" />
+              </svg>
+            </Button>
           </div>
         </div>
       </Card>
+      
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading units</AlertTitle>
+          <AlertDescription>
+            There was a problem loading your units. Please try refreshing the page.
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => refetch()}
+            >
+              Try Again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {isMobile ? (
         <div className="space-y-4">
@@ -339,170 +368,156 @@ const Units = () => {
                     {unit.status === "occupied" ? "Occupied" : "Vacant"}
                   </Badge>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-y-2 text-sm mb-2">
-                  <div>
-                    <p className="text-muted-foreground">Type</p>
-                    <p>{unit.unit_type}</p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Rent</p>
-                    <p className="font-medium">KES {unit.rent_amount.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Tenant</p>
-                    <p>{unit.tenant || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Features</p>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  </>
+)}
+                <TableRow>
+                  <TableHead className="w-[180px]">Unit</TableHead>
+                  <TableHead>Property</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Tenant</TableHead>
+                  <TableHead>Rent</TableHead>
+                  <TableHead>Features</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center h-24">
+                      <div className="flex justify-center items-center space-x-2">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <span>Loading units...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center h-24 text-red-500">
+                      Error loading units. Please try again.
+                    </TableCell>
+                  </TableRow>
+                ) : filteredUnits.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center h-24">
+                      No units found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUnits.map((unit) => (
+                    <TableRow 
+                      key={unit.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleUnitClick(unit)}
+                    >
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center">
+                        <Home className="h-4 w-4" />
+                      </div>
+                      <span className="font-medium">{unit.unit_number}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{unit.property}</TableCell>
+                  <TableCell>{unit.unit_type}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {unit.tenant ? (
+                        <>
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span>{unit.tenant}</span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>KES {unit.rent_amount.toLocaleString()}</TableCell>
+                  <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {unit.features.slice(0, 2).map((feature) => (
                         <Badge key={feature} variant="outline" className="text-xs">
                           {feature}
                         </Badge>
                       ))}
-                      {unit.features.length > 2 && 
-                        <Badge variant="outline" className="text-xs">+{unit.features.length - 2}</Badge>
-                      }
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end gap-2 mt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditUnit(unit);
-                    }}
-                  >
-                    Edit
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedUnit(unit);
-                      setIsDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </Card>
-            ))
-          )}
-        </div>
-      ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[180px]">Unit</TableHead>
-                <TableHead>Property</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>Rent</TableHead>
-                <TableHead>Features</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center h-24">
-                    <div className="flex justify-center items-center space-x-2">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                      <span>Loading units...</span>
+                      {unit.features.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{unit.features.length - 2}
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
-                </TableRow>
-              ) : error ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center h-24 text-red-500">
-                    Error loading units. Please try again.
+                  <TableCell>
+                    <span
+                      className={`flex items-center gap-1 ${
+                        unit.status === "occupied"
+                          ? "text-emerald-600"
+                          : "text-amber-600"
+                      }`}
+                    >
+                      {unit.status === "occupied" ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          <span>Occupied</span>
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-4 w-4" />
+                          <span>Vacant</span>
+                        </>
+                      )}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent row click
+                          handleUnitClick(unit);
+                        }}
+                      >
+                        View
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent row click
+                          handleEditUnit(unit);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent row click
+                          setSelectedUnit(unit);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : filteredUnits.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center h-24">
-                    No units found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredUnits.map((unit) => (
-                  <TableRow 
-                    key={unit.id}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => handleUnitClick(unit)}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center">
-                          <Home className="h-4 w-4" />
-                        </div>
-                        {unit.unit_number}
-                      </div>
-                    </TableCell>
-                    <TableCell>{unit.property}</TableCell>
-                    <TableCell>{unit.unit_type}</TableCell>
-                    <TableCell>{unit.tenant || "—"}</TableCell>
-                    <TableCell>KES {unit.rent_amount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {unit.features.slice(0, 3).map((feature) => (
-                          <Badge key={feature} variant="outline" className="text-xs">
-                            {feature}
-                          </Badge>
-                        ))}
-                        {unit.features.length > 3 && 
-                          <Badge variant="outline" className="text-xs">+{unit.features.length - 3}</Badge>
-                        }
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={unit.status === "occupied" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}>
-                        {unit.status === "occupied" ? "Occupied" : "Vacant"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditUnit(unit);
-                          }}
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedUnit(unit);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                          className="text-red-500 hover:text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-      {/* Edit Unit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
