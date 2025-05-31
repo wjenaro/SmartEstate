@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,9 +12,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Filter, Wrench, Clock, CheckCircle, AlertTriangle } from "lucide-react";
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Wrench, 
+  Clock, 
+  CheckCircle, 
+  AlertTriangle, 
+  Building, 
+  Home, 
+  ClipboardList, 
+  DollarSign, 
+  Calendar,
+  Loader2
+} from "lucide-react";
 import { MaintenanceForm } from "@/components/forms/MaintenanceForm";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -29,16 +44,21 @@ import { useMaintenance, useAddMaintenance, useUpdateMaintenance } from "@/hooks
 import { useProperties } from "@/hooks/useProperties";
 import { useUnits } from "@/hooks/useUnits";
 import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AccountBadge } from "@/components/ui/account-badge";
+import { useAccountScoping } from "@/hooks/useAccountScoping";
 
 const Maintenance = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isAuthenticated } = useAccountScoping();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all-statuses");
   const [propertyFilter, setPropertyFilter] = useState("all-properties");
   const [isAddMaintenanceOpen, setIsAddMaintenanceOpen] = useState(false);
   const [selectedMaintenance, setSelectedMaintenance] = useState<any>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   
   // Fetch real-time data from Supabase
   const { data: maintenanceData, isLoading: isMaintenanceLoading } = useMaintenance();
@@ -55,7 +75,27 @@ const Maintenance = () => {
     updateMaintenance.mutate({
       ...maintenance,
       status: newStatus
+    }, {
+      onSuccess: () => {
+        toast({
+          title: "Status updated",
+          description: `Maintenance status changed to ${newStatus.replace('_', ' ')}`
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Error updating status",
+          description: "There was a problem updating the status.",
+          variant: "destructive"
+        });
+        console.error("Error updating maintenance status:", error);
+      }
     });
+  };
+  
+  const handleViewMaintenance = (maintenance: any) => {
+    setSelectedMaintenance(maintenance);
+    setIsViewDialogOpen(true);
   };
   
   // Combined loading state
@@ -178,58 +218,64 @@ const Maintenance = () => {
     <MainLayout>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Maintenance</h1>
+          <div className="flex items-center">
+            <h1 className="text-3xl font-bold tracking-tight">Maintenance</h1>
+            <AccountBadge />
+          </div>
           <p className="text-muted-foreground">
-            Track and manage maintenance issues across your properties
+            Track and manage maintenance issues across your properties.
           </p>
         </div>
-        <Button
-          className="w-full md:w-auto"
-          onClick={() => setIsAddMaintenanceOpen(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Record Maintenance
+        <Button className="w-full md:w-auto" onClick={() => setIsAddMaintenanceOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Record Issue
         </Button>
       </div>
 
       <Card className="mb-6">
-        <div className="p-4 flex flex-col sm:flex-row gap-3 items-center">
-          <div className="relative w-full">
+        <div className="p-4 flex flex-wrap gap-3">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search maintenance issues..."
+              placeholder="Search issues..."
               className="pl-8 w-full bg-muted/40"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-statuses">All Statuses</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="closing">Closing</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={propertyFilter} onValueChange={setPropertyFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by property" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-properties">All Properties</SelectItem>
-                {propertiesData.map((property) => (
-                  <SelectItem key={property.id} value={property.id}>
-                    {property.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={propertyFilter} onValueChange={setPropertyFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Property" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all-properties">All Properties</SelectItem>
+              {propertiesData?.map((property: any) => (
+                <SelectItem key={property.id} value={property.id}>
+                  {property.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all-statuses">All Statuses</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Button variant="outline" className="ml-auto">
+            <Filter className="mr-2 h-4 w-4" /> Filter
+          </Button>
+          <Button variant="outline">
+            Export
+          </Button>
         </div>
       </Card>
 
@@ -281,27 +327,41 @@ const Maintenance = () => {
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={`skeleton-${index}`}>
+                  <TableRow key={index}>
                     <TableCell>
-                      <div className="h-4 w-32 bg-muted animate-pulse rounded"></div>
+                      <div className="flex items-start gap-3">
+                        <Skeleton className="h-10 w-10 rounded-md" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-24" />
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-16 bg-muted animate-pulse rounded"></div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-16" />
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-48 bg-muted animate-pulse rounded"></div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-3 w-28" />
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
+                      <Skeleton className="h-4 w-24" />
                     </TableCell>
                     <TableCell>
-                      <div className="h-6 w-24 bg-muted animate-pulse rounded"></div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
+                      <Skeleton className="h-4 w-20" />
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="h-8 w-16 bg-muted animate-pulse rounded ml-auto"></div>
+                      <Skeleton className="h-8 w-16 ml-auto" />
                     </TableCell>
                   </TableRow>
                 ))
@@ -348,7 +408,11 @@ const Maintenance = () => {
                       }
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewMaintenance(item)}
+                      >
                         View
                       </Button>
                     </TableCell>
@@ -361,11 +425,13 @@ const Maintenance = () => {
       )}
 
       <Dialog open={isAddMaintenanceOpen} onOpenChange={setIsAddMaintenanceOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogTitle>Record Maintenance</DialogTitle>
-          <DialogDescription>
-            Fill in the details below to record a new maintenance issue for your property.
-          </DialogDescription>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Record Maintenance</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to record a new maintenance issue for your property.
+            </DialogDescription>
+          </DialogHeader>
           <MaintenanceForm 
             properties={propertiesData}
             units={unitsData}
@@ -381,11 +447,111 @@ const Maintenance = () => {
                   expense_amount: values.expense_amount ? parseFloat(values.expense_amount.toString()) : undefined
                 });
                 setIsAddMaintenanceOpen(false);
+                toast({
+                  title: "Maintenance recorded",
+                  description: "The maintenance issue has been successfully recorded."
+                });
               } catch (error) {
                 console.error('Error adding maintenance:', error);
+                toast({
+                  title: "Error recording maintenance",
+                  description: "There was a problem saving the maintenance issue.",
+                  variant: "destructive"
+                });
               }
             }}
           />
+        </DialogContent>
+      </Dialog>
+      
+      {/* View Maintenance Details Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Maintenance Details</DialogTitle>
+          </DialogHeader>
+          {selectedMaintenance && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border rounded-md p-4 space-y-3">
+                  <h3 className="font-medium flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    Property & Unit
+                  </h3>
+                  <div className="space-y-1">
+                    <p className="font-medium">{selectedMaintenance.property}</p>
+                    <p className="text-muted-foreground">Unit: {selectedMaintenance.unit}</p>
+                  </div>
+                </div>
+                
+                <div className="border rounded-md p-4 space-y-3">
+                  <h3 className="font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Date & Status
+                  </h3>
+                  <div className="space-y-1">
+                    <p>Reported: {new Date(selectedMaintenance.date).toLocaleDateString()}</p>
+                    <div className="flex items-center gap-2">
+                      Status: {getStatusBadge(selectedMaintenance.status)}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border rounded-md p-4 space-y-3 md:col-span-2">
+                  <h3 className="font-medium flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    Issue Details
+                  </h3>
+                  <div className="space-y-2">
+                    <p className="font-medium">{selectedMaintenance.issue}</p>
+                    {selectedMaintenance.notes && (
+                      <div>
+                        <h4 className="text-sm font-medium mt-2">Notes</h4>
+                        <p className="text-muted-foreground">{selectedMaintenance.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {selectedMaintenance.expenseAmount > 0 && (
+                  <div className="border rounded-md p-4 space-y-3">
+                    <h3 className="font-medium flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Financial
+                    </h3>
+                    <div className="space-y-1">
+                      <p className="font-medium">Expense: KES {selectedMaintenance.expenseAmount.toLocaleString()}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="border-t pt-4">
+                <h3 className="font-medium mb-2">Update Status</h3>
+                <div className="flex items-center gap-3">
+                  <Select 
+                    value={selectedMaintenance.status} 
+                    onValueChange={(value) => handleStatusChange(selectedMaintenance.id, value)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Change status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>Close</Button>
+                <Button>Edit Issue</Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </MainLayout>

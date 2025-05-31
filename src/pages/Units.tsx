@@ -172,10 +172,15 @@ const Units = () => {
   const validProperties = properties
     .filter((p): p is any => 
       p && typeof p === 'object' && 'id' in p && 'name' in p)
-    .map(p => ({
-      id: p.id,
-      name: p.name
-    })) as Property[];
+    .map(p => {
+      // Ensure p is non-null before accessing properties
+      if (!p) return null;
+      return {
+        id: p.id,
+        name: p.name
+      };
+    })
+    .filter((p): p is Property => p !== null) as Property[];
 
   return (
     <MainLayout>

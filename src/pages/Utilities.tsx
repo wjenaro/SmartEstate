@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +12,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Filter, Droplet, Zap, LineChart, ArrowUp, ArrowDown } from "lucide-react";
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Droplet, 
+  Zap, 
+  LineChart, 
+  ArrowUp, 
+  ArrowDown, 
+  Building, 
+  Home, 
+  Calendar, 
+  Calculator,
+  Receipt,
+  Loader2
+} from "lucide-react";
 import { UtilityReadingForm } from "@/components/forms/UtilityReadingForm";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -30,6 +46,7 @@ import { useAccountScoping } from "@/hooks/useAccountScoping";
 import { AccountBadge } from "@/components/ui/account-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // The utility readings, properties, and units data is now fetched with account isolation via custom hooks
 
@@ -48,6 +65,8 @@ const Utilities = () => {
   const [monthFilter, setMonthFilter] = useState("all-months");
   const [isAddReadingOpen, setIsAddReadingOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [selectedUtility, setSelectedUtility] = useState<any>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   
   // Combined loading state
   const isLoading = isReadingsLoading || isPropertiesLoading || isUnitsLoading;
@@ -76,18 +95,22 @@ const Utilities = () => {
     });
   }, [utilityReadings, searchQuery, utilityTypeFilter, propertyFilter, monthFilter, activeTab]);
   
-  // Get utility type icon
-  const getUtilityIcon = (type: string) => {
-    switch (type) {
-      case "water":
-        return <Droplet className="h-4 w-4 text-blue-500" />;
-      case "electricity":
-        return <Zap className="h-4 w-4 text-yellow-500" />;
-      default:
-        return null;
-    }
+  // Handle viewing utility details
+  const handleViewUtility = (utility: any) => {
+    setSelectedUtility(utility);
+    setIsViewDialogOpen(true);
   };
   
+  // Helper function to display utility type icon
+  const getUtilityIcon = (type: string) => {
+    if (type === "water") {
+      return <Droplet className="h-4 w-4 text-blue-500" />;
+    } else if (type === "electricity") {
+      return <Zap className="h-4 w-4 text-yellow-500" />;
+    }
+    return null;
+  };
+
   // Get consumption with trend indicator
   const getConsumptionWithTrend = (current: number | null | undefined, previous: number | null | undefined) => {
     const currentValue = typeof current === 'number' ? current : 0;
@@ -245,195 +268,123 @@ const Utilities = () => {
         </Card>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">All Utilities</TabsTrigger>
-          <TabsTrigger value="water" className="flex items-center gap-1">
-            <Droplet className="h-4 w-4" />
-            <span>Water</span>
-          </TabsTrigger>
-          <TabsTrigger value="electricity" className="flex items-center gap-1">
-            <Zap className="h-4 w-4" />
-            <span>Electricity</span>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      <Card className="mb-6">
-        <div className="p-4 flex flex-col sm:flex-row gap-3 items-center">
-          <div className="relative w-full">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search utilities..."
-              className="pl-8 w-full bg-muted/40"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          <div className="flex gap-2 w-full sm:w-auto flex-wrap">
-            <Select value={propertyFilter} onValueChange={setPropertyFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by property" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-properties">All Properties</SelectItem>
-                {properties?.map((property) => (
-                  <SelectItem key={property.id} value={property.id}>
-                    {property.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={monthFilter} onValueChange={setMonthFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Month" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-months">All Months</SelectItem>
-                {months.map((month) => (
-                  <SelectItem key={month} value={month}>{month}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </Card>
-
-      {isMobile ? (
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="space-y-4">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <Card key={`skeleton-card-${index}`} className="p-4 mb-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="space-y-2">
-                      <div className="h-5 w-32 bg-muted animate-pulse rounded"></div>
-                      <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
-                    </div>
-                    <div className="h-6 w-24 bg-muted animate-pulse rounded"></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-y-2 mb-4">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i}>
-                        <div className="h-3 w-20 bg-muted animate-pulse rounded mb-1"></div>
-                        <div className="h-4 w-16 bg-muted animate-pulse rounded"></div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[180px]">Property</TableHead>
+              <TableHead>Unit</TableHead>
+              <TableHead>Utility</TableHead>
+              <TableHead>Current Reading</TableHead>
+              <TableHead>Previous Reading</TableHead>
+              <TableHead>Consumption</TableHead>
+              <TableHead>Rate</TableHead>
+              <TableHead>Month</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <div className="flex items-start gap-3">
+                      <Skeleton className="h-10 w-10 rounded-md" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-24" />
                       </div>
-                    ))}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          ) : filteredReadings.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              No utility readings found.
-            </div>
-          ) : (
-            filteredReadings.map((item) => getUtilityCard(item))
-          )}
-        </div>
-      ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[180px]">Property</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead>Utility</TableHead>
-                <TableHead>Current Reading</TableHead>
-                <TableHead>Previous Reading</TableHead>
-                <TableHead>Consumption</TableHead>
-                <TableHead>Rate</TableHead>
-                <TableHead>Month</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={`skeleton-${index}`}>
-                    <TableCell>
-                      <div className="h-4 w-32 bg-muted animate-pulse rounded"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-16 bg-muted animate-pulse rounded"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-16 bg-muted animate-pulse rounded"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="h-8 w-16 bg-muted animate-pulse rounded ml-auto"></div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : filteredReadings.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={10} className="h-24 text-center">
-                    No utility readings found.
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4 rounded-full" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-4 w-4 rounded-full" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="h-8 w-16 ml-auto" />
                   </TableCell>
                 </TableRow>
-              ) : (
-                filteredReadings.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.property}</TableCell>
-                    <TableCell>{item.unit}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        {getUtilityIcon(item.utility_type)}
-                        <span className="capitalize">{item.utility_type}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{item.current_reading}</TableCell>
-                    <TableCell>{item.previous_reading}</TableCell>
-                    <TableCell>
-                      {getConsumptionWithTrend(item.current_reading, item.previous_reading)}
-                    </TableCell>
-                    <TableCell>KES {item.rate}</TableCell>
-                    <TableCell>{item.month} {item.year}</TableCell>
-                    <TableCell>
-                      <span className="font-medium">
-                        KES {item.amount.toLocaleString()}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm">
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              ))
+            ) : filteredReadings.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={10} className="h-24 text-center">
+                  No utility readings found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredReadings.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.property}</TableCell>
+                  <TableCell>{item.unit}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      {getUtilityIcon(item.utility_type)}
+                      <span className="capitalize">{item.utility_type}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{item.current_reading}</TableCell>
+                  <TableCell>{item.previous_reading}</TableCell>
+                  <TableCell>
+                    {getConsumptionWithTrend(item.current_reading, item.previous_reading)}
+                  </TableCell>
+                  <TableCell>KES {item.rate}</TableCell>
+                  <TableCell>{item.month} {item.year}</TableCell>
+                  <TableCell>
+                    <span className="font-medium">
+                      KES {item.amount?.toLocaleString() || '0'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewUtility(item)}
+                    >
+                      View
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <Dialog open={isAddReadingOpen} onOpenChange={setIsAddReadingOpen}>
         <DialogContent className="max-w-4xl overflow-y-auto max-h-[90vh]">
-          <DialogTitle>Record Utility Reading</DialogTitle>
-          <DialogDescription>
-            Enter the details for water and/or electricity utility readings.
-          </DialogDescription>
+          <DialogHeader>
+            <DialogTitle>Record Utility Reading</DialogTitle>
+            <DialogDescription>
+              Enter the details for water and/or electricity utility readings.
+            </DialogDescription>
+          </DialogHeader>
           <UtilityReadingForm 
             properties={properties || []}
             units={units || []}
@@ -465,6 +416,113 @@ const Utilities = () => {
               }
             }}
           />
+        </DialogContent>
+      </Dialog>
+      
+      {/* View Utility Details Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Utility Reading Details</DialogTitle>
+          </DialogHeader>
+          {selectedUtility && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border rounded-md p-4 space-y-3">
+                  <h3 className="font-medium flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    Property & Unit
+                  </h3>
+                  <div className="space-y-1">
+                    <p className="font-medium">{selectedUtility.property}</p>
+                    <p className="text-muted-foreground">Unit: {selectedUtility.unit}</p>
+                  </div>
+                </div>
+                
+                <div className="border rounded-md p-4 space-y-3">
+                  <h3 className="font-medium flex items-center gap-2">
+                    {selectedUtility.utility_type === 'water' ? (
+                      <Droplet className="h-4 w-4 text-blue-500" />
+                    ) : (
+                      <Zap className="h-4 w-4 text-yellow-500" />
+                    )}
+                    Utility Type
+                  </h3>
+                  <div className="space-y-1">
+                    <p className="capitalize">{selectedUtility.utility_type}</p>
+                    <p className="text-muted-foreground">Rate: KES {selectedUtility.rate}/unit</p>
+                  </div>
+                </div>
+                
+                <div className="border rounded-md p-4 space-y-3">
+                  <h3 className="font-medium flex items-center gap-2">
+                    <LineChart className="h-4 w-4" />
+                    Readings
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Current Reading</p>
+                      <p className="font-medium">{selectedUtility.current_reading}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Previous Reading</p>
+                      <p className="font-medium">{selectedUtility.previous_reading}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Consumption</p>
+                      <p className="font-medium flex items-center">
+                        {selectedUtility.current_reading - selectedUtility.previous_reading}
+                        {(selectedUtility.current_reading - selectedUtility.previous_reading) > 0 ? (
+                          <ArrowUp className="ml-1 h-3 w-3 text-red-500" />
+                        ) : (selectedUtility.current_reading - selectedUtility.previous_reading) < 0 ? (
+                          <ArrowDown className="ml-1 h-3 w-3 text-green-500" />
+                        ) : null}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border rounded-md p-4 space-y-3">
+                  <h3 className="font-medium flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Period & Cost
+                  </h3>
+                  <div className="space-y-1">
+                    <p>Period: {selectedUtility.month} {selectedUtility.year}</p>
+                    <p className="font-medium text-lg">Total: KES {selectedUtility.amount.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border rounded-md p-4 space-y-3">
+                <h3 className="font-medium flex items-center gap-2">
+                  <Calculator className="h-4 w-4" />
+                  Calculation Breakdown
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Consumption</span>
+                    <span>{selectedUtility.current_reading - selectedUtility.previous_reading} units</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Rate per Unit</span>
+                    <span>KES {selectedUtility.rate}</span>
+                  </div>
+                  <div className="flex justify-between font-medium border-t pt-2">
+                    <span>Total Amount</span>
+                    <span>KES {selectedUtility.amount.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>Close</Button>
+                <Button>
+                  <Receipt className="mr-2 h-4 w-4" /> Generate Invoice
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </MainLayout>

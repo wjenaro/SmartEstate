@@ -130,6 +130,7 @@ export function useAccountScoping() {
     getCurrentAccountId,
     getAccountTypeInfo,
     isAuthenticated: !!userAccount?.id,
-    currentAccountId: userAccount?.id
+    currentAccountId: userAccount?.id,
+    isAdmin: userAccount?.role === 'admin' || userAccount?.role === 'super_admin'
   };
 }

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useMobileMenu } from "./MainLayout";
+import { useAccountScoping } from "@/hooks/useAccountScoping";
 import {
   Building,
   Users,
@@ -21,6 +22,9 @@ import {
   Coins,
   Wrench,
   Droplet,
+  LayoutDashboard,
+  BadgePercent,
+  ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -66,6 +70,15 @@ const navGroups: NavGroup[] = [
     ]
   },
   {
+    title: "Admin",
+    items: [
+      { title: "Dashboard", href: "/admin-dashboard", icon: LayoutDashboard },
+      { title: "Users", href: "/admin-users", icon: Users },
+      { title: "Subscriptions", href: "/admin-subscriptions", icon: BadgePercent },
+      { title: "Security", href: "/admin-security", icon: ShieldAlert },
+    ]
+  },
+  {
     title: "Other",
     items: [
       { title: "Messages", href: "/messages", icon: MessageSquare },
@@ -79,6 +92,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { closeMobileMenu } = useMobileMenu();
+  const { isAdmin } = useAccountScoping();
   
   return (
     <div 
@@ -101,33 +115,40 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
       </div>
       
       <div className="p-2">
-        {navGroups.map((group, index) => (
-          <div key={index} className="mb-6">
-            {!collapsed && (
-              <h3 className="text-xs uppercase text-sidebar-foreground/60 font-medium ml-3 mb-2">
-                {group.title}
-              </h3>
-            )}
-            <nav className="space-y-1">
-              {group.items.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
-                    location.pathname === item.href 
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                  )}
-                  onClick={isMobile ? closeMobileMenu : undefined}
-                >
-                  <item.icon className={cn("h-5 w-5", collapsed ? "mx-auto" : "")} />
-                  {!collapsed && <span>{item.title}</span>}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        ))}
+        {navGroups.map((group, index) => {
+          // Skip the Admin group for non-admin users
+          if (group.title === "Admin" && !isAdmin) {
+            return null;
+          }
+          
+          return (
+            <div key={index} className="mb-6">
+              {!collapsed && (
+                <h3 className="text-xs uppercase text-sidebar-foreground/60 font-medium ml-3 mb-2">
+                  {group.title}
+                </h3>
+              )}
+              <nav className="space-y-1">
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+                      location.pathname === item.href 
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
+                        : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    )}
+                    onClick={isMobile ? closeMobileMenu : undefined}
+                  >
+                    <item.icon className={cn("h-5 w-5", collapsed ? "mx-auto" : "")} />
+                    {!collapsed && <span>{item.title}</span>}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          );
+        })}
       </div>
       
       <div className="absolute bottom-4 left-0 right-0 px-4">

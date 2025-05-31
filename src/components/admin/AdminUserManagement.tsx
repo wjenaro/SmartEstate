@@ -5,60 +5,273 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Ban, CheckCircle, Search, Users, UserX, Crown } from "lucide-react";
+import { Eye, Ban, CheckCircle, Search, Users, UserX, Crown, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminUsers, useAdminActions } from "@/hooks/useAdminData";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export const AdminUserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{action: 'ban' | 'activate' | 'promote', userId: string} | null>(null);
   const { toast } = useToast();
-
-  // Mock data - in real app, this would come from API
-  const users = [
-    {
-      id: "1",
-      name: "John Doe",
-      email: "john@example.com",
-      plan: "Professional",
-      status: "active",
-      properties: 8,
-      joinDate: "2024-01-15",
-      role: "landlord",
-      is_demo: false,
-      last_login: "2024-01-25"
-    },
-    {
-      id: "2",
-      name: "Jane Smith",
-      email: "jane@example.com",
-      plan: "Starter",
-      status: "trial",
-      properties: 3,
-      joinDate: "2024-01-20",
-      role: "agent",
-      is_demo: false,
-      last_login: "2024-01-24"
-    },
-    {
-      id: "3",
-      name: "Demo User",
-      email: "demo@rentease.com",
-      plan: "Demo",
-      status: "active",
-      properties: 2,
-      joinDate: "2024-01-10",
-      role: "landlord",
-      is_demo: true,
-      last_login: "2024-01-25"
-    }
-  ];
-
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const { users, loading, error } = useAdminUsers();
+  const { banUser, activateUser, promoteToAdmin } = useAdminActions();
+  
+  // Filter users based on search term
+  const filteredUsers = users.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  // Handle user actions with confirmation
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return;
+    
+    const { action, userId } = confirmAction;
+    let success = false;
+    
+    if (action === 'ban') {
+      success = await banUser(userId);
+    } else if (action === 'activate') {
+      success = await activateUser(userId);
+    } else if (action === 'promote') {
+      success = await promoteToAdmin(userId);
+    }
+    
+    if (success) {
+      setConfirmAction(null);
+    }
+  };
+  
+  if (loading) {
+    return (
+      <Card className="w-full">
+        <CardContent className="py-10">
+          <div className="flex justify-center items-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2">Loading user data...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (error) {
+    return (
+      <Card className="w-full">
+        <CardContent className="py-10 text-center text-red-500">
+          Error loading user data: {error}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Users className="h-5 w-5" />
+            <span>User Management</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative mb-4">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search users..."
+              className="pl-8 w-full bg-muted/40"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead>Properties</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Join Date</TableHead>
+                  <TableHead>Last Login</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      No users found matching your search.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{user.name}</div>
+                          <div className="text-sm text-muted-foreground">{user.email}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.plan === 'Professional' ? 'default' : user.plan === 'Demo' ? 'secondary' : 'outline'}>
+                          {user.plan}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{user.properties}</TableCell>
+                      <TableCell>
+                        <Badge variant={user.status === 'active' ? 'success' : user.status === 'trial' ? 'warning' : 'destructive'}>
+                          {user.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="capitalize">{user.role}</span>
+                        {user.is_demo && (
+                          <Badge variant="outline" className="ml-2">Demo</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{user.joinDate}</TableCell>
+                      <TableCell>{user.last_login}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" size="sm" onClick={() => setViewingUserId(user.id)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          
+                          {user.status === 'banned' ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-green-600 border-green-200 hover:bg-green-50"
+                              onClick={() => setConfirmAction({ action: 'activate', userId: user.id })}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-red-600 border-red-200 hover:bg-red-50"
+                              onClick={() => setConfirmAction({ action: 'ban', userId: user.id })}
+                            >
+                              <Ban className="h-4 w-4" />
+                            </Button>
+                          )}
+                          
+                          {user.role !== 'admin' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                              onClick={() => setConfirmAction({ action: 'promote', userId: user.id })}
+                            >
+                              <Crown className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Confirmation Dialog */}
+      <Dialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {confirmAction?.action === 'ban' && "Ban User"}
+              {confirmAction?.action === 'activate' && "Activate User"}
+              {confirmAction?.action === 'promote' && "Promote to Admin"}
+            </DialogTitle>
+            <DialogDescription>
+              {confirmAction?.action === 'ban' && "Are you sure you want to ban this user? They will no longer be able to access the platform."}
+              {confirmAction?.action === 'activate' && "Are you sure you want to activate this user?"}
+              {confirmAction?.action === 'promote' && "Are you sure you want to promote this user to admin? They will have full access to the admin panel."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmAction(null)}>Cancel</Button>
+            <Button 
+              variant={confirmAction?.action === 'ban' ? 'destructive' : 'default'}
+              onClick={handleConfirmAction}
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* User Details Dialog */}
+      <Dialog open={!!viewingUserId} onOpenChange={(open) => !open && setViewingUserId(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+          </DialogHeader>
+          {viewingUserId && (
+            <div className="space-y-4">
+              {(() => {
+                const user = users.find(u => u.id === viewingUserId);
+                if (!user) return <p>User not found</p>;
+                
+                return (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Name</h3>
+                        <p>{user.name}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
+                        <p>{user.email}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Role</h3>
+                        <p className="capitalize">{user.role}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
+                        <p className="capitalize">{user.status}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Subscription Plan</h3>
+                        <p>{user.plan}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Properties</h3>
+                        <p>{user.properties}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Join Date</h3>
+                        <p>{user.joinDate}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Last Login</h3>
+                        <p>{user.last_login}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button variant="outline" onClick={() => setViewingUserId(null)}>Close</Button>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
       case "active":
         return "bg-green-100 text-green-800";
       case "trial":

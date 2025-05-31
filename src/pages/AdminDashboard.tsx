@@ -18,36 +18,40 @@ import {
   Settings,
   BarChart,
   Shield,
-  Building
+  Building,
+  Loader2
 } from "lucide-react";
+import { useAdminStats } from "@/hooks/useAdminData";
 
 const AdminDashboard = () => {
   const { adminUser, signOut } = useAdminAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const { stats, loading: statsLoading, error: statsError } = useAdminStats();
 
-  const statsData = [
+  // Format real data for the stats cards
+  const statsData = statsLoading ? [] : [
     {
       title: "Total Users",
-      value: "1,247",
-      change: "+12% from last month",
+      value: stats?.totalUsers.toLocaleString() || "0",
+      change: `${stats?.monthlyChange.users > 0 ? "+" : ""}${stats?.monthlyChange.users.toFixed(1)}% from last month`,
       icon: Users,
     },
     {
       title: "Monthly Revenue",
-      value: "KES 4,170,000",
-      change: "+8% from last month", 
+      value: `KES ${stats?.totalRevenue.toLocaleString() || "0"}`,
+      change: `${stats?.monthlyChange.revenue > 0 ? "+" : ""}${stats?.monthlyChange.revenue.toFixed(1)}% from last month`, 
       icon: DollarSign,
     },
     {
       title: "Active Subscriptions",
-      value: "892",
-      change: "+15% from last month",
+      value: stats?.activeSubscriptions.toLocaleString() || "0",
+      change: `${stats?.monthlyChange.subscriptions > 0 ? "+" : ""}${stats?.monthlyChange.subscriptions.toFixed(1)}% from last month`,
       icon: CreditCard,
     },
     {
       title: "Growth Rate",
-      value: "23.5%",
-      change: "+2.1% from last month",
+      value: `${stats?.growthRate.toFixed(1) || "0"}%`,
+      change: `${stats?.monthlyChange.growthRate > 0 ? "+" : ""}${stats?.monthlyChange.growthRate.toFixed(1)}% from last month`,
       icon: TrendingUp,
     },
   ];
@@ -98,21 +102,36 @@ const AdminDashboard = () => {
       <div className="p-6">
         {/* Overview Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-          {statsData.map((stat, index) => {
-            const IconComponent = stat.icon;
-            return (
-              <Card key={index}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                  <IconComponent className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground">{stat.change}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {statsLoading ? (
+            <Card className="col-span-4 py-8">
+              <CardContent className="flex justify-center items-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <span className="ml-2">Loading dashboard data...</span>
+              </CardContent>
+            </Card>
+          ) : statsError ? (
+            <Card className="col-span-4 py-8">
+              <CardContent className="text-center text-red-500">
+                Error loading dashboard data: {statsError}
+              </CardContent>
+            </Card>
+          ) : (
+            statsData.map((stat, index) => {
+              const IconComponent = stat.icon;
+              return (
+                <Card key={index}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                    <IconComponent className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <p className="text-xs text-muted-foreground">{stat.change}</p>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </div>
 
         {/* Admin Tabs */}
@@ -155,19 +174,19 @@ const AdminDashboard = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between">
                       <span>Total Properties</span>
-                      <span className="font-medium">3,247</span>
+                      <span className="font-medium">{stats?.totalProperties.toLocaleString() || "0"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Total Units</span>
-                      <span className="font-medium">12,890</span>
+                      <span className="font-medium">{stats?.totalUnits.toLocaleString() || "0"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Active Tenants</span>
-                      <span className="font-medium">9,456</span>
+                      <span className="font-medium">{stats?.activeTenants.toLocaleString() || "0"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Demo Accounts</span>
-                      <span className="font-medium">89</span>
+                      <span className="font-medium">{stats?.demoAccounts.toLocaleString() || "0"}</span>
                     </div>
                   </div>
                 </CardContent>

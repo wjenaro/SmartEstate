@@ -23,6 +23,7 @@ import Expenses from "./pages/Expenses";
 import Subscription from "./pages/Subscription";
 import SMSNotifications from "./pages/SMSNotifications";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminSubscriptions from "./pages/AdminSubscriptions";
 import AdminLogin from "./pages/AdminLogin";
 import AdminUnauthorized from "./pages/AdminUnauthorized";
 import Reports from "./pages/Reports";
@@ -169,11 +170,16 @@ const App = () => (
               {/* Admin routes - separate authentication */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
-              <Route path="/admin" element={
+              <Route path="/admin-dashboard" element={
                 <AdminAuthGuard>
                   <AdminDashboard />
                 </AdminAuthGuard>
-              } />
+              }/>
+              <Route path="/admin-subscriptions" element={
+                <AdminAuthGuard>
+                  <AdminSubscriptions />
+                </AdminAuthGuard>
+              }/>
               
               {/* Catch-all route */}
               <Route path="*" element={<NotFound />} />
