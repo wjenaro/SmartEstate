@@ -1,9 +1,10 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useUnits } from "@/hooks/useUnits";
+import { useNavigate, Link } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -13,8 +14,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Search, Home, User, Check, X, Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -29,7 +31,9 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/components/ui/use-toast";
 import { useProperties } from "@/hooks/useProperties";
-import { useUnits, useAddUnit, type Unit } from "@/hooks/useUnits";
+// Rename the imported Unit type to UnitType to avoid conflict
+import { useAddUnit, type Unit as UnitType } from "@/hooks/useUnits";
+import UnitForm from "@/components/forms/UnitForm";
 
 // Unit types options
 const UNIT_TYPES = [
@@ -84,334 +88,94 @@ const unitFormSchema = z.object({
 
 type UnitFormValues = z.infer<typeof unitFormSchema>;
 
-// Unit Form Component with real-time data
-const UnitForm = ({ onClose }: { onClose: () => void }) => {
-  const { data: properties, isLoading: loadingProperties } = useProperties();
-  const addUnit = useAddUnit();
-  const { toast } = useToast();
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [selectedProperty, setSelectedProperty] = useState<any>(null);
-  const [availableUnitTypes, setAvailableUnitTypes] = useState<Array<{id: string, label: string}>>(UNIT_TYPES);
-  
-  // Initialize form with Zod schema validation
-  const form = useForm<UnitFormValues>({
-    resolver: zodResolver(unitFormSchema),
-    defaultValues: {
-      unit_number: "",
-      status: "vacant",
-      features: []
-    }
-  });
+// Define clear interfaces to fix TypeScript errors
+// Define the same Property interface as used in UnitForm
+interface Property {
+  id: string;
+  name: string;
+}
 
-  // Handle feature checkbox changes
-  const handleFeatureToggle = (featureId: string) => {
-    setSelectedFeatures(prev => {
-      if (prev.includes(featureId)) {
-        return prev.filter(id => id !== featureId);
-      } else {
-        return [...prev, featureId];
-      }
-    });
-  };
-
-  // Update form value when features change
-  useEffect(() => {
-    form.setValue('features', selectedFeatures);
-  }, [selectedFeatures, form]);
-  
-  // Update available unit types when property selection changes
-  useEffect(() => {
-    if (!selectedProperty) {
-      setAvailableUnitTypes(UNIT_TYPES);
-      return;
-    }
-    
-    // Find the selected property
-    const property = properties?.find(p => p.id === selectedProperty);
-    if (!property) return;
-    
-    // Check if property has unit_types defined
-    if (property.unit_types && Object.keys(property.unit_types).length > 0) {
-      // Filter unit types based on property's unit_types
-      const propertyUnitTypes = Object.keys(property.unit_types);
-      const filteredTypes = UNIT_TYPES.filter(type => 
-        propertyUnitTypes.includes(type.id) || 
-        propertyUnitTypes.some(pt => pt.includes(type.id.toLowerCase()))
-      );
-      
-      setAvailableUnitTypes(filteredTypes.length > 0 ? filteredTypes : UNIT_TYPES);
-    } else {
-      // If no unit_types defined for the property, show all
-      setAvailableUnitTypes(UNIT_TYPES);
-    }
-    
-    // Clear the unit type selection when property changes
-    form.setValue('unit_type', '');
-  }, [selectedProperty, properties, form]);
-  
-  // Debug form values to identify missing fields
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      console.log('Form values:', value);
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
-  const onSubmit = async (values: UnitFormValues) => {
-    try {
-      // Log the values being submitted
-      console.log('Submitting unit with data:', values);
-      
-      // Ensure required fields are present
-      if (!values.property_id) {
-        form.setError('property_id', { 
-          type: 'manual', 
-          message: 'Property is required' 
-        });
-        return;
-      }
-      
-      if (!values.unit_number) {
-        form.setError('unit_number', { 
-          type: 'manual', 
-          message: 'Unit number is required' 
-        });
-        return;
-      }
-      
-      if (!values.unit_type) {
-        form.setError('unit_type', { 
-          type: 'manual', 
-          message: 'Unit type is required' 
-        });
-        return;
-      }
-      
-      await addUnit.mutateAsync({
-        property_id: values.property_id,
-        unit_number: values.unit_number,
-        unit_type: values.unit_type,
-        rent_amount: values.rent_amount,
-        status: values.status || 'vacant',
-        notes: values.notes || null,
-        features: values.features || []
-      });
-      
-      toast({
-        title: "Success",
-        description: "Unit has been added successfully",
-        variant: "default",
-      });
-      
-      onClose();
-    } catch (error) {
-      console.error("Error adding unit:", error);
-      toast({
-        title: "Error",
-        description: typeof error === 'object' && error !== null && 'message' in error
-          ? String(error.message)
-          : "Failed to add unit. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  return (
-    <div className="p-6">
-      <h2 className="text-xl font-semibold mb-6">Add New Unit</h2>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="property_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Property <span className="text-red-500">*</span></FormLabel>
-                  <Select 
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      setSelectedProperty(value);
-                    }}
-                    value={field.value}
-                    required
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select property" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {loadingProperties ? (
-                        <div className="flex items-center justify-center py-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        </div>
-                      ) : (
-                        properties?.map((property) => (
-                          <SelectItem key={property.id} value={property.id}>
-                            {property.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="unit_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Unit Number <span className="text-red-500">*</span></FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., A1, 101" {...field} required />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="unit_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Unit Type <span className="text-red-500">*</span></FormLabel>
-                  <Select 
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    required
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select unit type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {availableUnitTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="rent_amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Monthly Rent (KES)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      {...field} 
-                      type="number" 
-                      min="0" 
-                      step="0.01"
-                      placeholder="Enter rent amount" 
-                      onChange={e => field.onChange(e.target.value === "" ? null : parseFloat(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <FormLabel>Features & Amenities</FormLabel>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {FEATURES.map((feature) => (
-                <div key={feature.id} className="flex items-center space-x-2">
-                  <Checkbox 
-                    id={`feature-${feature.id}`} 
-                    checked={selectedFeatures.includes(feature.id)}
-                    onCheckedChange={() => handleFeatureToggle(feature.id)}
-                  />
-                  <label 
-                    htmlFor={`feature-${feature.id}`}
-                    className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    {feature.label}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Notes</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Enter any notes" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={addUnit.isPending}>
-              {addUnit.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Unit"
-              )}
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </div>
-  );
-};
+// Define our local display Unit type
+interface Unit {
+  id: string;
+  unit_number: string;
+  unit_type: string;
+  property: string;
+  property_id: string;
+  tenant: string | null;
+  rent_amount: number;
+  status: string;
+  features: string[];
+}
 
 const Units = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isAddUnitOpen, setIsAddUnitOpen] = useState(false);
-  
-  // Fetch units with real-time data
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const { data: units = [], isLoading, error } = useUnits();
+  const { data: properties = [], isLoading: propertiesLoading } = useProperties();
   
   // Process units to match the format needed for display
-  const processedUnits = units.map(unit => ({
-    id: unit.id,
-    number: unit.unit_number,
-    type: unit.unit_type,
-    property: unit.property?.name || 'Unknown Property',
-    property_id: unit.property_id,
-    tenant: unit.tenants?.[0] ? `${unit.tenants[0].first_name} ${unit.tenants[0].last_name}` : null,
-    rent: unit.rent_amount || 0,
-    status: unit.status,
-    features: unit.features || []
-  }));
+  const processedUnits = units.map(unit => {
+    // Type guard to ensure we're only processing valid unit objects
+    if (!unit || typeof unit !== 'object' || 'error' in unit) {
+      console.error('Error processing unit:', unit);
+      return null;
+    }
+    
+    // Use type assertion with a more specific type to address property access issues
+    const unitData = unit as any;
+    
+    return {
+      id: unitData.id,
+      unit_number: unitData.unit_number,
+      unit_type: unitData.unit_type,
+      property: unitData.property?.name || 'Unknown Property',
+      property_id: unitData.property_id,
+      tenant: unitData.tenants?.[0] ? `${unitData.tenants[0].first_name} ${unitData.tenants[0].last_name}` : null,
+      rent_amount: unitData.rent_amount || 0,
+      status: unitData.status,
+      features: unitData.features || []
+    };
+  }).filter(Boolean) as Unit[];
   
-  // Filter units based on search query and status filter
+  // Filter units based on search term and status
   const filteredUnits = processedUnits
     .filter(
       (unit) =>
-        unit.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        unit.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        unit.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (unit.tenant && unit.tenant.toLowerCase().includes(searchQuery.toLowerCase()))
+        unit.unit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        unit.property.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        unit.unit_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (unit.tenant && unit.tenant.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .filter((unit) => statusFilter === "all" || unit.status === statusFilter);
+
+  // Navigate to unit details page
+  const handleUnitClick = (unit: Unit) => {
+    navigate(`/units/${unit.id}`);
+  };
+
+  const handleEditUnit = (unit: Unit) => {
+    setSelectedUnit({
+      ...unit,
+      unit_number: unit.unit_number,
+      unit_type: unit.unit_type,
+      rent_amount: unit.rent_amount
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  // Extract valid properties for UnitForm
+  const validProperties = properties
+    .filter((p): p is any => 
+      p && typeof p === 'object' && 'id' in p && 'name' in p)
+    .map(p => ({
+      id: p.id,
+      name: p.name
+    })) as Property[];
 
   return (
     <MainLayout>
@@ -432,8 +196,8 @@ const Units = () => {
             <Input
               placeholder="Search units..."
               className="pl-8 w-full bg-muted/40"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
@@ -489,17 +253,21 @@ const Units = () => {
               </TableRow>
             ) : (
               filteredUnits.map((unit) => (
-                <TableRow key={unit.id}>
+                <TableRow 
+                  key={unit.id}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => handleUnitClick(unit)}
+                >
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="h-8 w-8 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center">
                         <Home className="h-4 w-4" />
                       </div>
-                      <span className="font-medium">{unit.number}</span>
+                      <span className="font-medium">{unit.unit_number}</span>
                     </div>
                   </TableCell>
                   <TableCell>{unit.property}</TableCell>
-                  <TableCell>{unit.type}</TableCell>
+                  <TableCell>{unit.unit_type}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {unit.tenant ? (
@@ -512,7 +280,7 @@ const Units = () => {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>KES {unit.rent.toLocaleString()}</TableCell>
+                  <TableCell>KES {unit.rent_amount.toLocaleString()}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {unit.features.slice(0, 2).map((feature) => (
@@ -549,7 +317,14 @@ const Units = () => {
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent row click
+                        handleUnitClick(unit);
+                      }}
+                    >
                       View
                     </Button>
                   </TableCell>
@@ -560,9 +335,42 @@ const Units = () => {
         </Table>
       </div>
 
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Unit</DialogTitle>
+            <DialogDescription>
+              Update the details for this unit.
+            </DialogDescription>
+          </DialogHeader>
+          <UnitForm 
+            properties={validProperties}
+            initialData={selectedUnit} 
+            isEditing={true}
+            onSuccess={() => {
+              setIsEditDialogOpen(false);
+            }} 
+            onClose={() => setIsEditDialogOpen(false)} 
+          />
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isAddUnitOpen} onOpenChange={setIsAddUnitOpen}>
-        <DialogContent className="max-w-3xl">
-          <UnitForm onClose={() => setIsAddUnitOpen(false)} />
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Unit</DialogTitle>
+            <DialogDescription>
+              Fill out the form to add a new unit to your property inventory.
+            </DialogDescription>
+          </DialogHeader>
+          <UnitForm 
+            properties={validProperties}
+            onSuccess={() => {
+              setIsAddUnitOpen(false);
+              // Reload units if needed
+            }} 
+            onClose={() => setIsAddUnitOpen(false)} 
+          />
         </DialogContent>
       </Dialog>
     </MainLayout>

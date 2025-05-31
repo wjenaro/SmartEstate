@@ -225,7 +225,8 @@ export function PropertyForm({ onClose, existingProperty }: PropertyFormProps) {
         caretaker_name: caretakerName || null,
         caretaker_phone: caretakerPhone || null,
         caretaker_email: caretakerEmail || null,
-        total_units: calculateTotalUnits()
+        total_units: calculateTotalUnits(),
+        unit_types: JSON.stringify(unitTypes) // Save unit types as JSON string
       };
       
       let result;
