@@ -563,7 +563,7 @@ const useAdminUsers = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { accountId } = useAccountScoping();
+  const { currentAccountId } = useAccountScoping();
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -590,13 +590,21 @@ const useAdminUsers = () => {
       // Count properties for each user
       const usersWithPropertyCount = await Promise.all(
         data.map(async (user) => {
+          // Check if user is a valid object and has an id property
+          if (!user || typeof user !== 'object' || !('id' in user)) {
+            // Create a new object without spreading to avoid type errors
+            return { property_count: 0 };
+          }
+          
           const { count, error: countError } = await supabase
             .from('properties')
             .select('id', { count: 'exact', head: true })
             .eq('user_id', user.id);
 
+          // Ensure user is a valid object before spreading
+          const userData = user && typeof user === 'object' ? user : {};
           return {
-            ...user,
+            ...userData,
             property_count: count || 0
           };
         })
@@ -616,9 +624,7 @@ const useAdminUsers = () => {
   }, []);
 
   // Set up real-time subscription
-  useRealTimeSubscription('user_accounts', ['user_accounts'], () => {
-    fetchUsers();
-  });
+  useRealTimeSubscription('user_accounts', ['user_accounts']);
 
   return {
     users,
@@ -636,8 +642,8 @@ const useAdminActions = () => {
     try {
       const { error } = await supabase
         .from('user_accounts')
-        .update({ status: 'suspended' })
-        .eq('id', id);
+        .update({ status: 'suspended' } as any)
+        .eq('id', id as any);
 
       if (error) throw error;
       return true;
@@ -655,8 +661,8 @@ const useAdminActions = () => {
     try {
       const { error } = await supabase
         .from('user_accounts')
-        .update({ status: 'active' })
-        .eq('id', id);
+        .update({ status: 'active' } as any)
+        .eq('id', id as any);
 
       if (error) throw error;
       return true;
@@ -674,8 +680,8 @@ const useAdminActions = () => {
     try {
       const { error } = await supabase
         .from('user_accounts')
-        .update({ role: 'admin' })
-        .eq('id', id);
+        .update({ role: 'admin' } as any)
+        .eq('id', id as any);
 
       if (error) throw error;
       return true;
