@@ -51,10 +51,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data.session?.user) {
         await fetchUserAccount(data.session.user.id);
       }
-      
-      return { session: data.session, error: null };
     } catch (error) {
-      return { session: null, error };
+      console.error('Session refresh error:', error);
     }
   }, []);
 
