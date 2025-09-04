@@ -24,9 +24,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://swtihvkvbmljpwslcoub.supabase.co';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dGlodmt2Ym1sanB3c2xjb3ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMjEwNTUsImV4cCI6MjA2Mzc5NzA1NX0.Z4nuTSMLXV4YN-UBOnJXS6pkrh7SeRzMmn_LLJXlnSA';
-
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ;
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
