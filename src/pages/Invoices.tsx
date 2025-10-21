@@ -11,9 +11,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Download, Calendar, Eye, FileText, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Download,
+  Calendar,
+  Eye,
+  FileText,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { InvoiceForm } from "@/components/forms/InvoiceForm";
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -90,23 +106,23 @@ const Invoices = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { toast } = useToast();
-  
+
   // Detect mobile viewport
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  
+
   // Setup real-time subscription for invoices (would connect to a real backend)
-  useRealTimeSubscription('invoices', ['invoices']);
-  
+  useRealTimeSubscription("invoices", ["invoices"]);
+
   // Handle viewport resize for responsive design
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
-  
+
   // Simulate data loading
   useEffect(() => {
     setIsLoading(true);
@@ -117,14 +133,15 @@ const Invoices = () => {
       // setError(new Error("Failed to load invoices"));
     }, 1000);
   }, []);
-  
+
   // Display error notifications
   useEffect(() => {
     if (error) {
       toast({
         title: "Error loading invoices",
-        description: "There was a problem loading your invoices. Please try again later.",
-        variant: "destructive"
+        description:
+          "There was a problem loading your invoices. Please try again later.",
+        variant: "destructive",
       });
     }
   }, [error, toast]);
@@ -137,7 +154,9 @@ const Invoices = () => {
         invoice.unit.toLowerCase().includes(searchQuery.toLowerCase()) ||
         invoice.id.toLowerCase().includes(searchQuery.toLowerCase())
     )
-    .filter((invoice) => statusFilter === "all" || invoice.status === statusFilter);
+    .filter(
+      (invoice) => statusFilter === "all" || invoice.status === statusFilter
+    );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -153,21 +172,21 @@ const Invoices = () => {
         return "bg-gray-100 text-gray-800";
     }
   };
-  
+
   const getStatusText = (status: string) => {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
-  
+
   const handleViewInvoice = (invoice: any) => {
     setSelectedInvoice(invoice);
     setIsViewInvoiceOpen(true);
   };
-  
+
   // Export function for invoices data
-  const handleExport = (format: 'csv' | 'pdf') => {
+  const handleExport = (format: "csv" | "pdf") => {
     toast({
       title: `Exporting invoices as ${format.toUpperCase()}`,
-      description: "Your file will be ready for download shortly."
+      description: "Your file will be ready for download shortly.",
     });
     setIsExportDialogOpen(false);
     // Actual export implementation would go here
@@ -178,17 +197,22 @@ const Invoices = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
-          <p className="text-muted-foreground">Manage your invoices and payments.</p>
+          <p className="text-muted-foreground">
+            Manage your invoices and payments.
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full sm:w-auto"
             onClick={() => setIsExportDialogOpen(true)}
           >
             <Download className="mr-2 h-4 w-4" /> Export
           </Button>
-          <Button className="w-full sm:w-auto" onClick={() => setIsAddInvoiceOpen(true)}>
+          <Button
+            className="w-full sm:w-auto"
+            onClick={() => setIsAddInvoiceOpen(true)}
+          >
             <Plus className="mr-2 h-4 w-4" /> Create Invoice
           </Button>
         </div>
@@ -252,8 +276,8 @@ const Invoices = () => {
                 <AlertCircle className="h-10 w-10" />
                 <h3 className="font-medium text-lg">Failed to load invoices</h3>
                 <p className="text-muted-foreground">Please try again later</p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="mt-2"
                   onClick={() => window.location.reload()}
                 >
@@ -267,39 +291,53 @@ const Invoices = () => {
             </Card>
           ) : (
             filteredInvoices.map((invoice) => (
-              <Card 
-                key={invoice.id} 
+              <Card
+                key={invoice.id}
                 className="p-4 cursor-pointer hover:bg-muted/40 transition-colors"
                 onClick={() => handleViewInvoice(invoice)}
               >
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-medium">{invoice.id}</h3>
-                    <p className="text-sm text-muted-foreground">{invoice.tenant}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {invoice.tenant}
+                    </p>
                   </div>
                   <Badge className={getStatusColor(invoice.status)}>
                     {getStatusText(invoice.status)}
                   </Badge>
                 </div>
-                
+
                 <div className="mt-3 pt-3 border-t space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground text-sm">Property:</span>
-                    <span className="text-sm">{invoice.property}, Unit {invoice.unit}</span>
+                    <span className="text-muted-foreground text-sm">
+                      Property:
+                    </span>
+                    <span className="text-sm">
+                      {invoice.property}, Unit {invoice.unit}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground text-sm">Amount:</span>
-                    <span className="text-sm font-medium">KES {invoice.amount.toLocaleString()}</span>
+                    <span className="text-muted-foreground text-sm">
+                      Amount:
+                    </span>
+                    <span className="text-sm font-medium">
+                      KES {invoice.amount.toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground text-sm">Due Date:</span>
-                    <span className="text-sm">{new Date(invoice.dueDate).toLocaleDateString()}</span>
+                    <span className="text-muted-foreground text-sm">
+                      Due Date:
+                    </span>
+                    <span className="text-sm">
+                      {new Date(invoice.dueDate).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end mt-3 pt-3 border-t">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     className="gap-1"
                     onClick={(e) => {
@@ -345,7 +383,10 @@ const Invoices = () => {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center h-24 text-rose-500">
+                  <TableCell
+                    colSpan={7}
+                    className="text-center h-24 text-rose-500"
+                  >
                     Error loading invoices. Please try again.
                   </TableCell>
                 </TableRow>
@@ -357,7 +398,7 @@ const Invoices = () => {
                 </TableRow>
               ) : (
                 filteredInvoices.map((invoice) => (
-                  <TableRow 
+                  <TableRow
                     key={invoice.id}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => handleViewInvoice(invoice)}
@@ -367,14 +408,18 @@ const Invoices = () => {
                     <TableCell>
                       <div>
                         <div>{invoice.property}</div>
-                        <div className="text-sm text-muted-foreground">Unit {invoice.unit}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Unit {invoice.unit}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>KES {invoice.amount.toLocaleString()}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-3 w-3 text-muted-foreground" />
-                        <span>{new Date(invoice.dueDate).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(invoice.dueDate).toLocaleDateString()}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -384,9 +429,9 @@ const Invoices = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -395,9 +440,9 @@ const Invoices = () => {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -427,7 +472,7 @@ const Invoices = () => {
           <DialogDescription>
             Fill in the details to create a new invoice.
           </DialogDescription>
-          <InvoiceForm 
+          <InvoiceForm
             onSuccess={() => {
               setIsAddInvoiceOpen(false);
               toast({
@@ -440,7 +485,7 @@ const Invoices = () => {
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* View Invoice Dialog */}
       <Dialog open={isViewInvoiceOpen} onOpenChange={setIsViewInvoiceOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -452,26 +497,38 @@ const Invoices = () => {
                   {getStatusText(selectedInvoice.status)}
                 </Badge>
               </DialogTitle>
-              
+
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Invoice Details</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                    Invoice Details
+                  </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Issue Date:</span>
-                      <span>{new Date(selectedInvoice.issueDate).toLocaleDateString()}</span>
+                      <span>
+                        {new Date(
+                          selectedInvoice.issueDate
+                        ).toLocaleDateString()}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Due Date:</span>
-                      <span>{new Date(selectedInvoice.dueDate).toLocaleDateString()}</span>
+                      <span>
+                        {new Date(selectedInvoice.dueDate).toLocaleDateString()}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Amount:</span>
-                      <span className="font-medium">KES {selectedInvoice.amount.toLocaleString()}</span>
+                      <span className="font-medium">
+                        KES {selectedInvoice.amount.toLocaleString()}
+                      </span>
                     </div>
                   </div>
-                  
-                  <h3 className="text-sm font-medium text-muted-foreground mt-6 mb-2">Tenant Information</h3>
+
+                  <h3 className="text-sm font-medium text-muted-foreground mt-6 mb-2">
+                    Tenant Information
+                  </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Name:</span>
@@ -487,52 +544,72 @@ const Invoices = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="border-t md:border-t-0 md:border-l pt-6 md:pt-0 md:pl-8">
-                  <h3 className="text-sm font-medium text-muted-foreground mb-4">Invoice Items</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                    Invoice Items
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between pb-2 border-b">
-                      <span>Rent for {new Date(selectedInvoice.dueDate).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
-                      <span>KES {(selectedInvoice.amount * 0.9).toLocaleString()}</span>
+                      <span>
+                        Rent for{" "}
+                        {new Date(selectedInvoice.dueDate).toLocaleString(
+                          "default",
+                          { month: "long", year: "numeric" }
+                        )}
+                      </span>
+                      <span>
+                        KES {(selectedInvoice.amount * 0.9).toLocaleString()}
+                      </span>
                     </div>
                     <div className="flex justify-between pb-2 border-b">
                       <span>Service Charge</span>
-                      <span>KES {(selectedInvoice.amount * 0.1).toLocaleString()}</span>
+                      <span>
+                        KES {(selectedInvoice.amount * 0.1).toLocaleString()}
+                      </span>
                     </div>
                     <div className="flex justify-between font-medium pt-2">
                       <span>Total</span>
                       <span>KES {selectedInvoice.amount.toLocaleString()}</span>
                     </div>
                   </div>
-                  
+
                   <div className="mt-8 pt-4 border-t">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Payment Information</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                      Payment Information
+                    </h3>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Payment Method:</span>
+                        <span className="text-muted-foreground">
+                          Payment Method:
+                        </span>
                         <span>Bank Transfer</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Account Name:</span>
-                        <span>SmartEstate Management</span>
+                        <span className="text-muted-foreground">
+                          Account Name:
+                        </span>
+                        <span>KangaMbili Management</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Account Number:</span>
+                        <span className="text-muted-foreground">
+                          Account Number:
+                        </span>
                         <span>1234567890</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              
+
               <DialogFooter className="mt-8">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setIsViewInvoiceOpen(false)}
                 >
                   Close
                 </Button>
-                <Button 
+                <Button
                   className="gap-2"
                   onClick={() => {
                     toast({
@@ -550,7 +627,7 @@ const Invoices = () => {
           )}
         </DialogContent>
       </Dialog>
-      
+
       {/* Export Dialog */}
       <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
         <DialogContent className="max-w-md">
@@ -561,18 +638,18 @@ const Invoices = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="flex flex-col items-center justify-center h-24 p-4"
-              onClick={() => handleExport('csv')}
+              onClick={() => handleExport("csv")}
             >
               <FileText className="h-8 w-8 mb-2" />
               <span>CSV</span>
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="flex flex-col items-center justify-center h-24 p-4"
-              onClick={() => handleExport('pdf')}
+              onClick={() => handleExport("pdf")}
             >
               <FileText className="h-8 w-8 mb-2" />
               <span>PDF</span>

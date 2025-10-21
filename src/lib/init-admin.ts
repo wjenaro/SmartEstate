@@ -1,7 +1,7 @@
 import { createAdminUser } from './create-admin';
 
 // Admin credentials
-const ADMIN_EMAIL = 'admin@rentease.com';
+const ADMIN_EMAIL = 'admin@kangambili.co.ke';
 const ADMIN_PASSWORD = 'Admin@123';
 const ADMIN_FIRST_NAME = 'System';
 const ADMIN_LAST_NAME = 'Administrator';

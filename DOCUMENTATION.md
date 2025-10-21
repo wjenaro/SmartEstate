@@ -459,7 +459,7 @@ Last Updated: May 30, 2025
 
 ## 📱 Mobile Responsiveness
 
-RentEase is designed with a mobile-first approach to ensure a seamless experience across all device sizes. The application employs several advanced techniques to deliver optimal user experience on mobile devices.
+KangaMbili is designed with a mobile-first approach to ensure a seamless experience across all device sizes. The application employs several advanced techniques to deliver optimal user experience on mobile devices.
 
 ### Mobile Navigation System
 
@@ -468,7 +468,7 @@ RentEase is designed with a mobile-first approach to ensure a seamless experienc
 │                  Mobile View                 │
 ├─────────────────────────────────────────────┤
 │ ┌─────────┐                      ┌────┐ ┌──┐ │
-│ │ ≡ Menu  │  RentEase            │ 🔔 │ │👤│ │
+│ │ ≡ Menu  │  KangaMbili            │ 🔔 │ │👤│ │
 │ └─────────┘                      └────┘ └──┘ │
 │ ┌─────────────────────────────────────────┐ │
 │ │                                         │ │
@@ -733,7 +733,7 @@ CREATE TABLE sms_notifications (
 
 ### Dual Authentication System
 
-RentEase implements two distinct authentication systems:
+KangaMbili implements two distinct authentication systems:
 
 1. **User Authentication** (Landlords/Agents)
    - Managed through `useAuth.tsx` hook
@@ -808,7 +808,7 @@ graph TD
 
 ## 🧩 Project Structure
 
-RentEase follows a modular, feature-based organization to manage the complexity of the application. Below is a comprehensive overview of the project structure:
+KangaMbili follows a modular, feature-based organization to manage the complexity of the application. Below is a comprehensive overview of the project structure:
 
 ```
 src/
@@ -1371,7 +1371,7 @@ The system automatically creates default subscription plans during migration:
 
 ## 🚀 Deployment Guide
 
-RentEase can be deployed using various hosting platforms:
+KangaMbili can be deployed using various hosting platforms:
 
 ### Deployment Options
 
@@ -1523,11 +1523,11 @@ RentEase can be deployed using various hosting platforms:
 ## 📞 Support & Contact
 
 For technical support or questions about this documentation:
-- **Email**: support@propertypro.co.ke
+- **Email**: support@kangambili.co.ke
 - **Documentation**: This README file
 - **API Reference**: See `/docs` folder
 - **Community**: Join our Discord community
 
 **Last Updated**: January 2024
 **Version**: 1.0.0
-**Author**: PropertyPro Development Team
+**Author**: KangaMbili Development Team

@@ -1,8 +1,8 @@
-# SmartEstate Authentication System Documentation
+# KangaMbili Authentication System Documentation
 
 ## Overview
 
-The SmartEstate authentication system is built on top of Supabase Auth with additional features for organization management, session tracking, and role-based access control. This document outlines the complete authentication flow, database schema, and implementation details.
+The KangaMbili authentication system is built on top of Supabase Auth with additional features for organization management, session tracking, and role-based access control. This document outlines the complete authentication flow, database schema, and implementation details.
 
 ## Architecture
 

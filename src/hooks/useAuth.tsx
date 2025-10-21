@@ -1,7 +1,12 @@
-
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { User, Session, AuthError } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
+import { User, Session, AuthError } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserAccount {
   id: string;
@@ -44,36 +49,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const { data, error } = await supabase.auth.refreshSession();
       if (error) throw error;
-      
+
       setSession(data.session);
       setUser(data.session?.user ?? null);
-      
+
       if (data.session?.user) {
         await fetchUserAccount(data.session.user.id);
       }
     } catch (error) {
-      console.error('Session refresh error:', error);
+      console.error("Session refresh error:", error);
     }
   }, []);
 
   useEffect(() => {
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Use setTimeout to prevent potential deadlock
-          setTimeout(() => {
-            fetchUserAccount(session.user.id);
-          }, 0);
-        } else {
-          setUserAccount(null);
-          setLoading(false);
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        // Use setTimeout to prevent potential deadlock
+        setTimeout(() => {
+          fetchUserAccount(session.user.id);
+        }, 0);
+      } else {
+        setUserAccount(null);
+        setLoading(false);
       }
-    );
+    });
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -101,47 +106,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchUserAccount = async (authUserId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('user_accounts')
-        .select('*')
-        .eq('auth_user_id', authUserId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching user account:', error);
+      // Get the user's email from auth
+      const authUser = await supabase.auth.getUser();
+      if (!authUser.data?.user?.email) {
+        console.error("No email found for auth user");
         setLoading(false);
         return null;
       }
 
-      if (!data) {
-        // Try to find by email as fallback
-        const authUser = await supabase.auth.getUser();
-        if (authUser.data?.user?.email) {
-          const { data: emailData, error: emailError } = await supabase
-            .from('user_accounts')
-            .select('*')
-            .eq('email', authUser.data.user.email)
-            .single();
-          
-          if (!emailError && emailData) {
-            // Link the account by updating auth_user_id
-            await supabase
-              .from('user_accounts')
-              .update({ auth_user_id: authUserId })
-              .eq('id', emailData.id);
-            
-            setUserAccount(emailData);
-            return emailData;
-          }
-        }
-      } else {
+      // Find user account by email
+      const { data, error } = await supabase
+        .from("user_accounts")
+        .select(
+          "id,email,first_name,last_name,phone,company_name,role,is_active,is_demo,onboarding_completed,trial_ends_at"
+        )
+        .eq("email", authUser.data.user.email)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching user account:", error);
+        setLoading(false);
+        return null;
+      }
+
+      if (data) {
         setUserAccount(data);
         return data;
       }
-      
+
       return null;
     } catch (error) {
-      console.error('Error fetching user account:', error);
+      console.error("Error fetching user account:", error);
       return null;
     } finally {
       setLoading(false);
@@ -150,48 +146,51 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
-    
+
     try {
-      const result = await supabase.auth.signInWithPassword({ email, password });
-      
+      const result = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
       if (result.error) {
         return result;
       }
-      
+
       // Check if user has an account record
       if (result.data?.user) {
         const userAccount = await fetchUserAccount(result.data.user.id);
-        
+
         // If no user account found, create one based on auth data
         if (!userAccount) {
           const userData = {
-            auth_user_id: result.data.user.id,
             email: result.data.user.email || email,
-            first_name: result.data.user.user_metadata?.first_name || 'User',
-            last_name: result.data.user.user_metadata?.last_name || email.split('@')[0],
-            role: 'landlord',
+            first_name: result.data.user.user_metadata?.first_name || "User",
+            last_name:
+              result.data.user.user_metadata?.last_name || email.split("@")[0],
+            role: "landlord",
             is_active: true,
-            onboarding_completed: false
+            onboarding_completed: false,
           };
-          
+
           const { error: accountError } = await supabase
-            .from('user_accounts')
+            .from("user_accounts")
             .insert(userData)
             .select()
             .single();
-            
+
           if (accountError) {
-            console.error('Error creating missing user account:', accountError);
+            console.error("Error creating missing user account:", accountError);
           } else {
             // Refresh to get the new account
             await fetchUserAccount(result.data.user.id);
           }
         }
       }
-      
+
       return result;
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error("Sign in error:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -200,76 +199,91 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, userData: any) => {
     setLoading(true);
-    console.log('Signing up user:', email, userData);
-    
+    console.log("Signing up user:", email, userData);
+
     try {
-      // First check if user account already exists in our database
+      // First check if email exists
       const { data: existingAccount } = await supabase
-        .from('user_accounts')
-        .select('id')
-        .eq('email', email)
-        .single();
+        .from("user_accounts")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
 
       if (existingAccount) {
-        // User account already exists, return error
-        return { 
-          data: null, 
-          error: { message: 'An account with this email already exists. Please sign in instead.' }
+        return {
+          data: null,
+          error: {
+            message: "An account with this email already exists.",
+          },
         };
       }
 
-      const { data: authData, error } = await supabase.auth.signUp({
+      // Create the auth user first
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: userData
-        }
+          data: {
+            ...userData,
+            is_owner: true,
+          },
+        },
       });
 
-      if (!error && authData.user) {
-        console.log('Creating user account for:', authData.user.id);
-        // Create user account record
-        const { data: accountData, error: accountError } = await supabase
-          .from('user_accounts')
-          .insert({
-            auth_user_id: authData.user.id,
-            email,
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-            phone: userData.phone,
-            company_name: userData.company_name,
-            role: userData.role || 'landlord',
-            is_demo: userData.is_demo || false,
-            onboarding_completed: false
-          })
+      if (authError) {
+        throw authError;
+      }
+
+      if (authData.user) {
+        console.log("Creating user account for:", authData.user.id);
+
+        // Create user account and organization using a database function
+        const { data: result, error: fnError } = await supabase.rpc(
+          "create_user_and_org",
+          {
+            p_email: email,
+            p_first_name: userData.first_name,
+            p_last_name: userData.last_name,
+            p_phone: userData.phone || null,
+            p_company_name: userData.company_name || null,
+            p_org_name:
+              userData.company_name || `${userData.first_name}'s Organization`,
+            p_role: userData.role || "landlord",
+            p_is_demo: userData.is_demo || false,
+          }
+        );
+
+        if (fnError) {
+          console.error("Error creating account:", fnError);
+          throw fnError;
+        }
+
+        // Fetch the newly created account
+        const { data: accountData, error: fetchError } = await supabase
+          .from("user_accounts")
           .select()
+          .eq("email", email)
           .single();
 
-        if (accountError) {
-          console.error('Error creating user account:', accountError);
-          // If account creation fails due to duplicate email, return appropriate error
-          if (accountError.code === '23505') {
-            return { 
-              data: null, 
-              error: { message: 'An account with this email already exists. Please sign in instead.' }
-            };
-          }
-          throw accountError;
-        } else {
-          // Successfully created user account
+        if (fetchError) {
+          console.error("Error fetching new account:", fetchError);
+          throw fetchError;
+        }
+
+        if (accountData) {
           setUserAccount(accountData);
         }
       }
 
-      return { data: authData, error };
+      return { data: authData, error: null };
     } catch (error) {
-      console.error('Sign up error:', error);
+      console.error("Sign up error:", error);
       throw error;
     }
   };
 
   const signOut = async () => {
-    console.log('Signing out user');
+    console.log("Signing out user");
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -278,27 +292,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateUserAccount = async (data: Partial<UserAccount>) => {
     if (!userAccount) {
-      console.error('No user account to update');
+      console.error("No user account to update");
       return;
     }
 
-    console.log('Updating user account:', data);
+    console.log("Updating user account:", data);
     try {
       const { error } = await supabase
-        .from('user_accounts')
+        .from("user_accounts")
         .update(data)
-        .eq('id', userAccount.id);
+        .eq("id", userAccount.id);
 
       if (!error) {
         const updatedAccount = { ...userAccount, ...data };
         setUserAccount(updatedAccount);
-        console.log('User account updated successfully:', updatedAccount);
+        console.log("User account updated successfully:", updatedAccount);
       } else {
-        console.error('Error updating user account:', error);
+        console.error("Error updating user account:", error);
         throw error;
       }
     } catch (error) {
-      console.error('Error updating user account:', error);
+      console.error("Error updating user account:", error);
       throw error;
     }
   };
@@ -306,7 +320,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/auth?reset=true'
+        redirectTo: window.location.origin + "/auth?reset=true",
       });
       return { error };
     } catch (error) {
@@ -316,7 +330,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updatePassword = async (newPassword: string) => {
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
       return { error };
     } catch (error) {
       return { error: error as AuthError };
@@ -347,7 +363,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

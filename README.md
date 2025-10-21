@@ -1,8 +1,8 @@
 
-# RentEase Property Management System
+# KangaMbili Property Management System
 
 ## System Overview
-RentEase is a comprehensive property management SaaS application designed for landlords and property agents. It streamlines rental property management, tenant tracking, rent collection, invoicing, and communication through an intuitive web interface.
+KangaMbili is a comprehensive property management SaaS application designed for landlords and property agents. It streamlines rental property management, tenant tracking, rent collection, invoicing, and communication through an intuitive web interface.
 
 ## Tech Stack
 - **Frontend**: React with TypeScript

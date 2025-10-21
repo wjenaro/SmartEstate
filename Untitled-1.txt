@@ -1,0 +1,2 @@
+  + CategoryInfo          : SecurityError: (:) [], PSSecurityException
+  + FullyQualifiedErrorId : UnauthorizedAccess

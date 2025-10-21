@@ -19,7 +19,7 @@ function verifyPassword(inputPassword: string, storedHash?: string): boolean {
 export async function directAdminAuth(email: string, password: string) {
   try {
     // Check if this is the default admin password scenario
-    const isDefaultAdmin = email === 'admin@rentease.com' && password === 'Admin@123';
+    const isDefaultAdmin = email === 'admin@kangambili.co.ke' && password === 'Admin@123';
     
     // Get the admin user record
     const { data: adminUser, error } = await supabase

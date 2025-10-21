@@ -1,4 +1,4 @@
--- Migration to implement account-based data isolation in SmartEstate
+-- Migration to implement account-based data isolation in KangaMbili
 
 -- =======================================
 -- 1. Add account_id column to tables that might be missing it

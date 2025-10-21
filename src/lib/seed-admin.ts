@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
 // Admin user details
-const ADMIN_EMAIL = 'admin@rentease.com';
+const ADMIN_EMAIL = 'admin@kangambili.co.ke';
 const ADMIN_FIRST_NAME = 'System';
 const ADMIN_LAST_NAME = 'Administrator';
 const ADMIN_ROLE = 'super_admin';

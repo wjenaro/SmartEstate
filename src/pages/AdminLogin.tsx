@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { CreateAdminButton } from "@/components/admin/CreateAdminButton";
@@ -19,12 +18,12 @@ const AdminLogin = () => {
   });
 
   const { signIn, error: authError, refreshSession } = useAdminAuth();
-  
+
   // Handle form submission for password reset
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       // Here we would typically call a password reset function
       // For now, just simulate success with a toast message
@@ -33,7 +32,7 @@ const AdminLogin = () => {
         description: `If ${formData.email} exists in our system, you'll receive instructions to reset your password.`,
       });
     } catch (error: any) {
-      console.error('Password reset error:', error);
+      console.error("Password reset error:", error);
       toast({
         title: "Error",
         description: error.message || "An unexpected error occurred.",
@@ -64,7 +63,7 @@ const AdminLogin = () => {
     try {
       // Attempt to sign in as admin
       const { error } = await signIn(formData.email, formData.password);
-      
+
       if (error) {
         toast({
           title: "Login Failed",
@@ -74,7 +73,7 @@ const AdminLogin = () => {
       } else {
         // Refresh session to ensure we have the latest admin data
         await refreshSession();
-        
+
         toast({
           title: "Welcome to Admin Portal",
           description: "Successfully logged in as administrator.",
@@ -82,7 +81,7 @@ const AdminLogin = () => {
         navigate("/admin");
       }
     } catch (error: any) {
-      console.error('Admin login error:', error);
+      console.error("Admin login error:", error);
       toast({
         title: "Error",
         description: error.message || "An unexpected error occurred.",
@@ -94,7 +93,7 @@ const AdminLogin = () => {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -118,12 +117,15 @@ const AdminLogin = () => {
               <CreateAdminButton />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Default credentials: admin@rentease.com / Admin@123
+              Default credentials: admin@kangambili.co.ke / Admin@123
             </p>
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={isResetMode ? handleResetPassword : handleSubmit} className="space-y-4">
+          <form
+            onSubmit={isResetMode ? handleResetPassword : handleSubmit}
+            className="space-y-4"
+          >
             <div>
               <Label htmlFor="email">Administrator Email</Label>
               <Input
@@ -143,22 +145,31 @@ const AdminLogin = () => {
                   id="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("password", e.target.value)
+                  }
                   required
                 />
               </div>
             )}
 
-            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={loading}>
-              {loading 
-                ? (isResetMode ? "Sending Reset Link..." : "Authenticating...") 
-                : (isResetMode ? "Reset Password" : "Access Admin Portal")
-              }
+            <Button
+              type="submit"
+              className="w-full bg-red-600 hover:bg-red-700"
+              disabled={loading}
+            >
+              {loading
+                ? isResetMode
+                  ? "Sending Reset Link..."
+                  : "Authenticating..."
+                : isResetMode
+                ? "Reset Password"
+                : "Access Admin Portal"}
             </Button>
-            
+
             <div className="mt-2 text-center">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="text-sm text-blue-600 hover:text-blue-800"
                 onClick={() => setIsResetMode(!isResetMode)}
               >
@@ -167,9 +178,23 @@ const AdminLogin = () => {
             </div>
 
             <div className="mt-4 text-center">
-              <Link to="/" className="text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <Link
+                to="/"
+                className="text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  />
                 </svg>
                 Return to main application
               </Link>
@@ -181,12 +206,12 @@ const AdminLogin = () => {
               <Building2 className="h-4 w-4" />
               <span>Return to main application</span>
             </div>
-            <Button 
-              variant="link" 
+            <Button
+              variant="link"
               onClick={() => navigate("/")}
               className="text-sm"
             >
-              Go to RentEase App
+              Go to KangaMbili App
             </Button>
           </div>
         </CardContent>

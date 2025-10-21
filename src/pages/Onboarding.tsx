@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,31 +12,34 @@ type OnboardingStep = "welcome" | "setup" | "subscription" | "complete";
 const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome");
   const [searchParams] = useSearchParams();
-  const isDemo = searchParams.get('demo') === 'true' || false;
+  const isDemo = searchParams.get("demo") === "true" || false;
   const { user, userAccount, updateUserAccount } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log('Onboarding - Page loaded');
-    console.log('Onboarding - User:', user ? 'exists' : 'null');
-    console.log('Onboarding - UserAccount:', userAccount);
-    console.log('Onboarding - Is Demo:', isDemo);
-    console.log('Onboarding - Onboarding completed:', userAccount?.onboarding_completed);
+    console.log("Onboarding - Page loaded");
+    console.log("Onboarding - User:", user ? "exists" : "null");
+    console.log("Onboarding - UserAccount:", userAccount);
+    console.log("Onboarding - Is Demo:", isDemo);
+    console.log(
+      "Onboarding - Onboarding completed:",
+      userAccount?.onboarding_completed
+    );
 
     if (!user) {
-      console.log('Onboarding - No user, redirecting to auth');
+      console.log("Onboarding - No user, redirecting to auth");
       navigate("/auth", { replace: true });
       return;
     }
 
     if (!userAccount) {
-      console.log('Onboarding - No user account, waiting...');
+      console.log("Onboarding - No user account, waiting...");
       return;
     }
 
     if (userAccount.onboarding_completed) {
-      console.log('Onboarding - Already completed, redirecting to dashboard');
+      console.log("Onboarding - Already completed, redirecting to dashboard");
       navigate("/dashboard", { replace: true });
       return;
     }
@@ -49,7 +51,7 @@ const Onboarding = () => {
   }, [user, userAccount, navigate, isDemo]);
 
   const handleNext = () => {
-    console.log('Onboarding - Moving to next step from:', currentStep);
+    console.log("Onboarding - Moving to next step from:", currentStep);
     switch (currentStep) {
       case "welcome":
         setCurrentStep("setup");
@@ -64,7 +66,7 @@ const Onboarding = () => {
   };
 
   const handlePrevious = () => {
-    console.log('Onboarding - Moving to previous step from:', currentStep);
+    console.log("Onboarding - Moving to previous step from:", currentStep);
     switch (currentStep) {
       case "setup":
         setCurrentStep("welcome");
@@ -84,19 +86,24 @@ const Onboarding = () => {
         throw new Error("User account not found");
       }
 
-      console.log('Onboarding - Completing onboarding for user:', userAccount.id);
+      console.log(
+        "Onboarding - Completing onboarding for user:",
+        userAccount.id
+      );
 
       // Update the user account to mark onboarding as completed
       await updateUserAccount({ onboarding_completed: true });
 
       toast({
-        title: userAccount.is_demo ? "Demo Ready!" : "Welcome to RentEase!",
-        description: userAccount.is_demo 
-          ? "Your demo account is set up with 2 properties and 20 units limit." 
+        title: userAccount.is_demo ? "Demo Ready!" : "Welcome to KangaMbili!",
+        description: userAccount.is_demo
+          ? "Your demo account is set up with 2 properties and 20 units limit."
           : "Your account has been set up successfully.",
       });
 
-      console.log('Onboarding - Completed successfully, navigating to dashboard');
+      console.log(
+        "Onboarding - Completed successfully, navigating to dashboard"
+      );
       // Navigate to dashboard
       navigate("/dashboard", { replace: true });
     } catch (error) {
@@ -136,11 +143,15 @@ const Onboarding = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-500">
-                Step {
-                  currentStep === "welcome" ? 1 :
-                  currentStep === "setup" ? 2 :
-                  currentStep === "subscription" ? 3 : 4
-                } of 4
+                Step{" "}
+                {currentStep === "welcome"
+                  ? 1
+                  : currentStep === "setup"
+                  ? 2
+                  : currentStep === "subscription"
+                  ? 3
+                  : 4}{" "}
+                of 4
               </span>
               {effectiveIsDemo && (
                 <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
@@ -149,13 +160,17 @@ const Onboarding = () => {
               )}
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{
-                  width: 
-                    currentStep === "welcome" ? "25%" :
-                    currentStep === "setup" ? "50%" :
-                    currentStep === "subscription" ? "75%" : "100%"
+                  width:
+                    currentStep === "welcome"
+                      ? "25%"
+                      : currentStep === "setup"
+                      ? "50%"
+                      : currentStep === "subscription"
+                      ? "75%"
+                      : "100%",
                 }}
               ></div>
             </div>
@@ -163,12 +178,8 @@ const Onboarding = () => {
 
           {/* Content */}
           <div className="bg-white rounded-lg shadow-lg p-8">
-            {currentStep === "welcome" && (
-              <OnboardingWelcome {...baseProps} />
-            )}
-            {currentStep === "setup" && (
-              <OnboardingSetup {...baseProps} />
-            )}
+            {currentStep === "welcome" && <OnboardingWelcome {...baseProps} />}
+            {currentStep === "setup" && <OnboardingSetup {...baseProps} />}
             {currentStep === "subscription" && (
               <OnboardingSubscription {...baseProps} />
             )}
